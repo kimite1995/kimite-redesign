@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KIMITE STUDIO — 리디자인 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0d0f;          /* matches the video studio backdrop */
+    --ink: #f3eee6;
+    --muted: #8a8590;
+    --gold: #ffc21a;
+    --red: #ff2a2a;
+    --line: #26232a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  body { background: var(--bg); color: var(--ink); font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body.loading { overflow: hidden; }
+
+  /* ---------- loader ---------- */
+  #loader { position: fixed; inset: 0; z-index: 100; background: #050405; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; transition: opacity .8s ease, visibility .8s; }
+  #loader.done { opacity: 0; visibility: hidden; }
+  #loader .pct { font-family: Anton, sans-serif; font-size: clamp(64px, 12vw, 140px); line-height: 1; }
+  #loader .pct span { color: var(--gold); }
+  #loader .lbl { font-size: 12px; letter-spacing: .4em; color: var(--muted); }
+  #loader .bar { width: min(320px, 60vw); height: 2px; background: var(--line); overflow: hidden; }
+  #loader .bar i { display: block; height: 100%; width: 0; background: var(--gold); }
+
+  /* ---------- nav ---------- */
+  nav { position: fixed; inset: 0 0 auto 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 22px clamp(16px, 4vw, 48px); }
+  nav .logo { font-family: Anton, sans-serif; font-size: 22px; letter-spacing: .04em; }
+  nav .logo b { color: var(--gold); font-weight: 400; }
+  nav ul { display: flex; gap: 28px; list-style: none; font-size: 14px; font-weight: 600; color: #cfc9d3; }
+  nav a { color: inherit; text-decoration: none; }
+  nav .cta { border: 1px solid #3a3540; padding: 9px 16px; border-radius: 99px; font-size: 13px; font-weight: 700; }
+  nav .cta:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ---------- pinned canvas stage ---------- */
+  #story { position: relative; height: 700vh; }
+  .stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  #canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,.65) 100%); }
+  .grain { position: absolute; inset: -50%; pointer-events: none; opacity: .07; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: grain 1s steps(6) infinite; }
+  @keyframes grain { 0%{transform:translate(0,0)} 20%{transform:translate(-3%,2%)} 40%{transform:translate(2%,-3%)} 60%{transform:translate(-2%,-1%)} 80%{transform:translate(3%,3%)} 100%{transform:translate(0,0)} }
+
+  /* flash when the eye powers on */
+  .flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(80% 80% at var(--fx, 53%) var(--fy, 19%), rgba(255,90,80,.95), rgba(190,10,10,.8) 40%, rgba(60,0,0,.75) 100%); opacity: 0; }
+
+  /* story captions */
+  .cap { position: absolute; z-index: 5; pointer-events: none; opacity: 0; will-change: opacity, transform; }
+  .cap.left { left: clamp(16px, 6vw, 96px); top: 50%; transform: translateY(-50%); max-width: 40vw; }
+  .cap.right { right: clamp(16px, 6vw, 96px); top: 50%; transform: translateY(-50%); max-width: 36vw; text-align: right; }
+  .cap.bottom { left: 50%; bottom: 9vh; transform: translateX(-50%); text-align: center; width: min(90vw, 900px); }
+  .cap .k { font-size: 12px; letter-spacing: .35em; color: var(--gold); font-weight: 700; margin-bottom: 14px; }
+  .cap h1, .cap h2 { font-weight: 800; line-height: 1.12; letter-spacing: -.02em; text-shadow: 0 4px 30px rgba(0,0,0,.85), 0 1px 3px rgba(0,0,0,.6); }
+  .cap p, .cap .k { text-shadow: 0 2px 14px rgba(0,0,0,.9); }
+  .cap h1 { font-size: clamp(36px, 5.6vw, 84px); }
+  .cap h2 { font-size: clamp(28px, 4vw, 60px); }
+  .cap p { margin-top: 16px; font-size: clamp(14px, 1.2vw, 17px); color: #bdb7c2; line-height: 1.7; }
+  .cap .red { color: var(--red); text-shadow: 0 0 24px rgba(255,42,42,.6); }
+  .cap .huge { font-family: Anton, sans-serif; font-size: clamp(64px, 13vw, 220px); line-height: .9; font-weight: 400; letter-spacing: 0; }
+  .cap .huge b { color: var(--gold); font-weight: 400; }
+
+  .status { position: absolute; left: clamp(16px, 4vw, 48px); bottom: 28px; z-index: 6; font: 600 11px/1.8 ui-monospace, Consolas, monospace; color: var(--muted); letter-spacing: .12em; }
+  .status b { color: #5f5a66; font-weight: 600; }
+  .status b.on { color: var(--red); text-shadow: 0 0 10px rgba(255,42,42,.7); }
+  .scroll-hint { position: absolute; right: clamp(16px, 4vw, 48px); bottom: 28px; z-index: 6; font-size: 11px; letter-spacing: .3em; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+  .scroll-hint i { width: 1px; height: 40px; background: linear-gradient(var(--gold), transparent); animation: drip 1.6s ease-in-out infinite; transform-origin: top; }
+  @keyframes drip { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+  .progress { position: absolute; left: 0; top: 0; height: 2px; background: var(--gold); width: 0; z-index: 6; }
+
+  /* ---------- regular sections ---------- */
+  section.block { position: relative; z-index: 2; background: var(--bg); padding: clamp(80px, 12vw, 160px) clamp(16px, 6vw, 96px); }
+  .eyebrow { font-family: Anton, sans-serif; font-size: 14px; letter-spacing: .2em; color: var(--gold); }
+  .block h3 { font-size: clamp(30px, 4.4vw, 64px); font-weight: 800; letter-spacing: -.02em; margin: 14px 0 48px; line-height: 1.15; }
+  .works { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; }
+  .work { position: relative; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; background: #19171b; border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: flex-end; padding: 22px; transition: transform .5s cubic-bezier(.2,.8,.2,1), border-color .3s; }
+  .work:first-child { grid-row: span 2; aspect-ratio: auto; }
+  .work:hover { transform: translateY(-6px); border-color: var(--gold); }
+  .work::before { content: "▶"; position: absolute; top: 20px; right: 22px; color: var(--gold); font-size: 14px; }
+  .work .t { font-size: 12px; color: var(--gold); font-weight: 700; letter-spacing: .1em; }
+  .work h4 { font-size: 20px; margin: 8px 0 6px; }
+  .work p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .services { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
+  .svc { padding: 34px 28px 34px 0; border-bottom: 1px solid var(--line); }
+  .svc .n { font-family: Anton, sans-serif; color: #3a3540; font-size: 40px; transition: color .3s; }
+  .svc:hover .n { color: var(--gold); }
+  .svc h4 { font-size: 20px; margin: 10px 0 8px; }
+  .svc p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+  .contact { text-align: center; }
+  .contact .big { font-family: Anton, sans-serif; font-size: clamp(56px, 11vw, 180px); line-height: .95; }
+  .contact .big span { color: transparent; -webkit-text-stroke: 2px var(--ink); }
+  .contact a.btn { display: inline-block; margin-top: 40px; background: var(--gold); color: #111; font-weight: 800; text-decoration: none; padding: 18px 34px; border-radius: 99px; font-size: 16px; }
+  footer { padding: 32px clamp(16px, 6vw, 96px); border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .reveal { opacity: 0; transform: translateY(40px); }
+
+  @media (max-width: 860px) {
+    nav ul { display: none; }
+    .cap.left, .cap.right { left: 16px; right: 16px; top: auto; bottom: 14vh; transform: none; max-width: none; text-align: left; }
+    .works { grid-template-columns: 1fr 1fr; }
+    .work:first-child { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 10; }
+    .services { grid-template-columns: 1fr; }
+    .scroll-hint { display: none; }
+  }
+</style>
+</head>
+<body class="loading">
+
+<div id="loader">
+  <div class="lbl">SYSTEM BOOTING</div>
+  <div class="pct"><span id="pct">0</span>%</div>
+  <div class="bar"><i id="bar"></i></div>
+</div>
+
+<nav>
+  <div class="logo">KIMITE<b>.</b>STUDIO</div>
+  <ul><li><a href="#works">Works</a></li><li><a href="#services">Services</a></li><li><a href="#about">About</a></li></ul>
+  <a class="cta" href="#contact">프로젝트 문의</a>
+</nav>
+
+<div id="story">
+  <div class="stage">
+    <canvas id="canvas"></canvas>
+    <div class="flash" id="flash"></div>
+    <div class="vignette"></div>
+    <div class="grain"></div>
+    <div class="progress" id="progress"></div>
+
+    <div class="cap left" data-cap="1">
+      <div class="k">KIMITE STUDIO</div>
+      <h1>AI로 빚어내는<br>영화 같은 순간.</h1>
+      <p>광고, 브랜드 필름, 뮤직비디오, 영상 선물까지.</p>
+    </div>
+    <div class="cap right" data-cap="2">
+      <div class="k">ABOUT</div>
+      <h2>기술보다는 이야기.<br>속도보다는 감정.</h2>
+      <p>최신 생성형 AI와 전통적인 포스트 프로덕션을 결합합니다.</p>
+    </div>
+    <div class="cap bottom" data-cap="3">
+      <div class="huge">SYSTEM <b>ONLINE</b></div>
+    </div>
+    <div class="cap left" data-cap="4">
+      <div class="k">NEXT SCENE</div>
+      <h2>다음 장면의 주인공은<br><span class="red">당신</span>입니다.</h2>
+      <p>Let's Create Together.</p>
+    </div>
+
+    <div class="status">UNIT · KIMITE-01<br>OPTIC SENSOR · <b id="sensor">OFFLINE</b></div>
+    <div class="scroll-hint">SCROLL<i></i></div>
+  </div>
+</div>
+
+<section class="block" id="works">
+  <div class="eyebrow reveal">FEATURED WORKS</div>
+  <h3 class="reveal">화면 속 세상으로<br>들어가는 영상들.</h3>
+  <div class="works">
+    <div class="work reveal"><div class="t">숏폼</div><h4>AI를 이용해 화면 속 세상에 들어가다</h4><p>뮤직비디오부터 영화, 애니메이션까지. AI로 내 얼굴을 다양한 이야기의 주인공으로.</p></div>
+    <div class="work reveal"><div class="t">AI 뮤직비디오</div><h4>AI COVER 뮤직비디오</h4><p>기존 음원 편곡과 영상화를 AI로.</p></div>
+    <div class="work reveal"><div class="t">AI 뮤직비디오</div><h4>GOLDSKINZ 뮤직비디오</h4><p>기존 음원을 생성형 AI 비주얼로 재해석.</p></div>
+    <div class="work reveal"><div class="t">브랜드 필름</div><h4>에어베이퍼 홈페이지 루프 영상</h4><p>제품 속 캐릭터가 브랜드의 첫인상으로.</p></div>
+    <div class="work reveal"><div class="t">영상 상품</div><h4>소중한 사람을 위한 영상 선물</h4><p>가족의 기억을 따뜻한 영상으로.</p></div>
+  </div>
+</section>
+
+<section class="block" id="services">
+  <div class="eyebrow reveal">SERVICES</div>
+  <h3 class="reveal">AI 영상 제작부터 레슨까지.</h3>
+  <div class="services">
+    <div class="svc reveal"><div class="n">01</div><h4>시네마틱 브랜드 필름</h4><p>브랜드의 세계관을 영화적으로 풀어내는 AI 영상</p></div>
+    <div class="svc reveal"><div class="n">02</div><h4>광고 · 커머스 영상</h4><p>숏폼부터 풀 버전까지, 제품 광고와 커머스 콘텐츠</p></div>
+    <div class="svc reveal"><div class="n">03</div><h4>뮤직비디오 · 내러티브</h4><p>아티스트의 감성을 시각화하는 뮤직비디오와 숏필름</p></div>
+    <div class="svc reveal"><div class="n">04</div><h4>추모영상 · 개인 프로젝트</h4><p>소중한 순간을 담는 개인 맞춤형 영상</p></div>
+    <div class="svc reveal"><div class="n">05</div><h4>AI 영상 제작 레슨</h4><p>프롬프트, 워크플로, 툴 활용 노하우 공유</p></div>
+    <div class="svc reveal"><div class="n">06</div><h4>AI 워크플로 컨설팅</h4><p>팀을 위한 AI 영상 제작 프로세스 구축</p></div>
+  </div>
+</section>
+
+<section class="block contact" id="contact">
+  <div class="eyebrow reveal">CONTACT</div>
+  <div class="big reveal">LET'S <span>CREATE</span><br>TOGETHER</div>
+  <a class="btn reveal" href="https://kimite.kr/#contact">프로젝트 시작하기 →</a>
+</section>
+
+<footer id="about"><span>© KIMITE STUDIO</span><span>리디자인 시안 — 문구는 현재 kimite.kr 기준</span></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(async () => {
+  gsap.registerPlugin(ScrollTrigger);
+
+  // ---- config -------------------------------------------------------------
+  // Where the robotic eye sits in the last frame of the wake clip (0..1 of the frame).
+  const EYE = { x: 0.531, y: 0.19 };
+  // Scroll timeline split (0..1 of the pinned story):
+  //   0.00-0.42 wake clip · 0.42-0.58 eye powers on · 0.58-1.00 point clip
+  const T_WAKE_END = 0.42, T_EYE_END = 0.58;
+
+  // ---- load frames ---------------------------------------------------------
+  const manifest = await fetch('frames/manifest.json').then(r => r.json());
+  const clips = ['wake', 'point'];
+  const frames = {};
+  const total = clips.reduce((n, c) => n + manifest[c], 0);
+  let loaded = 0;
+  const pctEl = document.getElementById('pct'), barEl = document.getElementById('bar');
+  await Promise.all(clips.flatMap(c => {
+    frames[c] = [];
+    return Array.from({ length: manifest[c] }, (_, i) => new Promise(res => {
+      const img = new Image();
+      img.onload = img.onerror = () => {
+        loaded++;
+        const p = Math.round(loaded / total * 100);
+        pctEl.textContent = p; barEl.style.width = p + '%';
+        res();
+      };
+      img.src = `frames/${c}/${String(i + 1).padStart(4, '0')}.webp`;
+      frames[c][i] = img;
+    }));
+  }));
+
+  // ---- canvas --------------------------------------------------------------
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let cw = 0, ch = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    cw = canvas.clientWidth; ch = canvas.clientHeight;
+    canvas.width = cw * dpr; canvas.height = ch * dpr;
+    render();
+  }
+  // "cover" fit, nudged so the character stays centred on narrow screens
+  function fit(img) {
+    const s = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+    const w = img.naturalWidth * s, h = img.naturalHeight * s;
+    return { x: (cw - w) / 2, y: (ch - h) / 2, w, h };
+  }
+
+  const state = { clip: 'wake', frame: 0, eye: 0, shake: 0 };
+  const flashEl = document.getElementById('flash');
+  const sensorEl = document.getElementById('sensor');
+
+  function render() {
+    const img = frames[state.clip][Math.round(state.frame)];
+    if (!img || !img.complete || !cw) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = '#0e0d0f'; ctx.fillRect(0, 0, cw, ch);
+    const f = fit(img);
+    const sx = state.shake ? (Math.random() - .5) * state.shake : 0;
+    const sy = state.shake ? (Math.random() - .5) * state.shake : 0;
+    ctx.drawImage(img, f.x + sx, f.y + sy, f.w, f.h);
+
+    // red optic glow overlay (only while the wake clip's last frame is held)
+    if (state.eye > 0.01 && state.clip === 'wake') {
+      const ex = f.x + sx + EYE.x * f.w, ey = f.y + sy + EYE.y * f.h;
+      const r = f.w * 0.012;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      let g = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 9);
+      g.addColorStop(0, `rgba(255,60,50,${0.55 * state.eye})`);
+      g.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex, ey, r * 9, 0, 7); ctx.fill();
+      g = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 1.6);
+      g.addColorStop(0, `rgba(255,240,235,${state.eye})`);
+      g.addColorStop(.35, `rgba(255,40,40,${state.eye})`);
+      g.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex, ey, r * 1.6, 0, 7); ctx.fill();
+      // horizontal lens streak
+      ctx.globalAlpha = .5 * state.eye;
+      g = ctx.createLinearGradient(ex - r * 16, ey, ex + r * 16, ey);
+      g.addColorStop(0, 'rgba(255,0,0,0)'); g.addColorStop(.5, 'rgba(255,90,80,1)'); g.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(ex - r * 16, ey - r * .12, r * 32, r * .24);
+      ctx.restore();
+      flashEl.style.setProperty('--fx', (ex / cw * 100) + '%');
+      flashEl.style.setProperty('--fy', (ey / ch * 100) + '%');
+    }
+  }
+
+  // Power-on curve: the eye stutters (on-off-on-off) before locking on.
+  // p is 0..1 across the eye segment.
+  function eyeCurve(p) {
+    const keys = [[0, 0], [.2, 0], [.24, .9], [.28, 0], [.42, 0], [.45, .6], [.47, .1], [.52, 1], [.56, .2], [.7, 1], [1, 1]];
+    for (let i = 1; i < keys.length; i++) {
+      if (p <= keys[i][0]) {
+        const [x0, y0] = keys[i - 1], [x1, y1] = keys[i];
+        return y0 + (y1 - y0) * ((p - x0) / (x1 - x0 || 1));
+      }
+    }
+    return 1;
+  }
+
+  function update(p) {
+    if (p < T_WAKE_END) {
+      state.clip = 'wake';
+      state.frame = (p / T_WAKE_END) * (manifest.wake - 1);
+      state.eye = 0; state.shake = 0;
+    } else if (p < T_EYE_END) {
+      const e = (p - T_WAKE_END) / (T_EYE_END - T_WAKE_END);
+      state.clip = 'wake'; state.frame = manifest.wake - 1;
+      state.eye = eyeCurve(e);
+      // shake when it locks on, then a red flash builds up to hide the cut to the next shot
+      const lock = Math.max(0, 1 - Math.abs(e - .7) / .08);
+      const build = Math.max(0, (e - .8) / .2);
+      state.shake = Math.max(lock, build) * 10;
+      flashEl.style.opacity = Math.max(lock * .35, state.eye * .06, build);
+    } else {
+      state.clip = 'point';
+      const q = (p - T_EYE_END) / (1 - T_EYE_END);
+      state.frame = q * (manifest.point - 1);
+      state.eye = 1;
+      // flash fades out over the first few % after the cut
+      const fade = Math.max(0, 1 - q / .08);
+      state.shake = fade * 8;
+      flashEl.style.opacity = fade;
+    }
+    const on = state.eye > .5;
+    sensorEl.textContent = on ? 'ONLINE' : 'OFFLINE';
+    sensorEl.classList.toggle('on', on);
+    render();
+  }
+
+  // ---- smooth scroll + scroll mapping -------------------------------------
+  const lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(t => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
+
+  ScrollTrigger.create({
+    trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: true,
+    onUpdate: self => {
+      update(self.progress);
+      document.getElementById('progress').style.width = (self.progress * 100) + '%';
+    }
+  });
+
+  // captions fade in/out across the story (start, end as 0..1 of the story)
+  const caps = { 1: [0, .16], 2: [.2, .36], 3: [.47, .6], 4: [.72, .95] };
+  Object.entries(caps).forEach(([id, [a, b]]) => {
+    const el = document.querySelector(`[data-cap="${id}"]`);
+    const story = document.getElementById('story');
+    const at = f => () => `top+=${f * (story.offsetHeight - innerHeight)} top`;
+    const tl = gsap.timeline({ scrollTrigger: { trigger: story, start: at(a), end: at(b), scrub: true, invalidateOnRefresh: true } });
+    if (a === 0) gsap.set(el, { opacity: 1 });
+    else tl.fromTo(el, { opacity: 0, y: 40, filter: 'blur(8px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: .3 });
+    tl.to(el, { opacity: 1, duration: .4 }).to(el, { opacity: 0, y: -40, filter: 'blur(8px)', duration: .3 });
+  });
+  gsap.to('.scroll-hint', { opacity: 0, scrollTrigger: { trigger: '#story', start: 'top top', end: '5% top', scrub: true } });
+
+  // section reveals
+  gsap.utils.toArray('.reveal').forEach(el => {
+    gsap.to(el, { opacity: 1, y: 0, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%' } });
+  });
+
+  addEventListener('resize', resize);
+  resize();
+  update(0);
+
+  // hide loader
+  document.getElementById('loader').classList.add('done');
+  document.body.classList.remove('loading');
+})();
+</script>
+</body>
+</html>
