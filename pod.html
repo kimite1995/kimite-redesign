@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KIMITE STUDIO — 캡슐 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0d0f;          /* matches the video studio backdrop */
+    --ink: #f3eee6;
+    --muted: #8a8590;
+    --gold: #ffc21a;
+    --red: #ff2a2a;
+    --line: #26232a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  body { background: var(--bg); color: var(--ink); font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body.loading { overflow: hidden; }
+
+  /* ---------- loader ---------- */
+  #loader { position: fixed; inset: 0; z-index: 100; background: #050405; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; transition: opacity .8s ease, visibility .8s; }
+  #loader.done { opacity: 0; visibility: hidden; }
+  #loader .pct { font-family: Unbounded, sans-serif; font-weight: 800; font-size: clamp(52px, 9vw, 120px); line-height: 1; }
+  #loader .pct span { color: var(--gold); }
+  #loader .lbl { font-size: 12px; letter-spacing: .4em; color: var(--muted); }
+  #loader .bar { width: min(320px, 60vw); height: 2px; background: var(--line); overflow: hidden; }
+  #loader .bar i { display: block; height: 100%; width: 0; background: var(--gold); }
+
+  /* ---------- nav ---------- */
+  nav { position: fixed; inset: 0 0 auto 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 22px clamp(16px, 4vw, 48px); }
+  nav .logo { font-family: Unbounded, sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+  nav .logo b { color: var(--gold); font-weight: 400; }
+  nav ul { display: flex; gap: 28px; list-style: none; font-size: 14px; font-weight: 600; color: #cfc9d3; }
+  nav a { color: inherit; text-decoration: none; }
+  nav .cta { border: 1px solid #3a3540; padding: 9px 16px; border-radius: 99px; font-size: 13px; font-weight: 700; }
+  nav .cta:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ---------- pinned canvas stage ---------- */
+  #story { position: relative; height: 1100vh; }
+  .stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  #canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,.65) 100%); }
+  .grain { position: absolute; inset: -50%; pointer-events: none; opacity: .07; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: grain 1s steps(6) infinite; }
+  @keyframes grain { 0%{transform:translate(0,0)} 20%{transform:translate(-3%,2%)} 40%{transform:translate(2%,-3%)} 60%{transform:translate(-2%,-1%)} 80%{transform:translate(3%,3%)} 100%{transform:translate(0,0)} }
+
+  /* flash when the eye powers on */
+  .flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(80% 80% at var(--fx, 53%) var(--fy, 19%), rgba(255,90,80,.95), rgba(190,10,10,.8) 40%, rgba(60,0,0,.75) 100%); opacity: 0; }
+
+  .snapflash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(45% 45% at 40% 33%, rgba(255,250,235,.95), rgba(255,210,120,.35) 40%, transparent 75%); mix-blend-mode: screen; }
+
+  .glassflash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(60% 70% at 50% 50%, rgba(235,255,255,.95), rgba(120,255,240,.45) 40%, transparent 80%); mix-blend-mode: screen; }
+
+  /* "See the work" pops in on the finger snap */
+  .pop { position: absolute; z-index: 7; left: 50%; bottom: 11vh; transform: translateX(-50%) scale(.5); opacity: 0; pointer-events: none;
+         font-family: Unbounded, sans-serif; font-weight: 800; font-size: clamp(36px, 6.5vw, 112px); letter-spacing: -.03em; line-height: 1; white-space: nowrap;
+         color: var(--ink); text-decoration: none; text-shadow: 0 6px 40px rgba(0,0,0,.8); transition: opacity .25s, transform .25s; }
+  .pop i { font-style: normal; color: var(--gold); display: inline-block; }
+  .pop.on { opacity: 1; pointer-events: auto; animation: pop .55s cubic-bezier(.2, 1.7, .35, 1) both; }
+  .pop.on i { animation: bob 1.2s ease-in-out .5s infinite; }
+  .pop:hover i { color: var(--red); }
+  @keyframes pop { 0% { transform: translateX(-50%) scale(.4); opacity: 0; filter: blur(10px); } 60% { opacity: 1; filter: blur(0); } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
+  @keyframes bob { 50% { transform: translateY(14%); } }
+
+  /* story captions */
+  .cap { position: absolute; z-index: 5; pointer-events: none; opacity: 0; will-change: opacity, transform; }
+  .cap.left { left: clamp(16px, 6vw, 96px); top: 50%; transform: translateY(-50%); max-width: 40vw; }
+  .cap.right { right: clamp(16px, 6vw, 96px); top: 50%; transform: translateY(-50%); max-width: 36vw; text-align: right; }
+  .cap.bottom { left: 50%; bottom: 9vh; transform: translateX(-50%); text-align: center; width: min(90vw, 900px); }
+  .cap .k { font-size: 12px; letter-spacing: .35em; color: var(--gold); font-weight: 700; margin-bottom: 14px; }
+  .cap h1, .cap h2 { font-weight: 800; line-height: 1.12; letter-spacing: -.02em; text-shadow: 0 4px 30px rgba(0,0,0,.85), 0 1px 3px rgba(0,0,0,.6); }
+  .cap p, .cap .k { text-shadow: 0 2px 14px rgba(0,0,0,.9); }
+  .cap h1 { font-size: clamp(36px, 5.6vw, 84px); }
+  .cap h2 { font-size: clamp(28px, 4vw, 60px); }
+  .cap p { margin-top: 16px; font-size: clamp(14px, 1.2vw, 17px); color: #bdb7c2; line-height: 1.7; }
+  .cap .red { color: var(--red); text-shadow: 0 0 24px rgba(255,42,42,.6); }
+  .cap .huge { font-family: Unbounded, sans-serif; font-size: clamp(48px, 9vw, 160px); line-height: .95; font-weight: 800; letter-spacing: -.03em; }
+  .cap .huge b { color: var(--gold); font-weight: 800; }
+  .cap .disp { font-family: Unbounded, sans-serif; font-weight: 700; letter-spacing: -.03em; }
+
+  .status { position: absolute; left: clamp(16px, 4vw, 48px); bottom: 28px; z-index: 6; font: 600 11px/1.8 ui-monospace, Consolas, monospace; color: var(--muted); letter-spacing: .12em; }
+  .status b { color: #5f5a66; font-weight: 600; }
+  .status b.on { color: var(--red); text-shadow: 0 0 10px rgba(255,42,42,.7); }
+  .scroll-hint { position: absolute; right: clamp(16px, 4vw, 48px); bottom: 28px; z-index: 6; font-size: 11px; letter-spacing: .3em; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+  .scroll-hint i { width: 1px; height: 40px; background: linear-gradient(var(--gold), transparent); animation: drip 1.6s ease-in-out infinite; transform-origin: top; }
+  @keyframes drip { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+  .progress { position: absolute; left: 0; top: 0; height: 2px; background: var(--gold); width: 0; z-index: 6; }
+
+  /* ---------- regular sections ---------- */
+  section.block { position: relative; z-index: 2; background: var(--bg); padding: clamp(80px, 12vw, 160px) clamp(16px, 6vw, 96px); }
+  .eyebrow { font-family: Unbounded, sans-serif; font-weight: 600; font-size: 12px; letter-spacing: .15em; color: var(--gold); }
+  .block h3 { font-size: clamp(30px, 4.4vw, 64px); font-weight: 800; letter-spacing: -.02em; margin: 14px 0 48px; line-height: 1.15; }
+  .works { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; }
+  .work { position: relative; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; background: #19171b; border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: flex-end; padding: 22px; transition: transform .5s cubic-bezier(.2,.8,.2,1), border-color .3s; }
+  .work:first-child { grid-row: span 2; aspect-ratio: auto; }
+  .work:hover { transform: translateY(-6px); border-color: var(--gold); }
+  .work::before { content: "▶"; position: absolute; top: 20px; right: 22px; color: var(--gold); font-size: 14px; }
+  .work .t { font-size: 12px; color: var(--gold); font-weight: 700; letter-spacing: .1em; }
+  .work h4 { font-size: 20px; margin: 8px 0 6px; }
+  .work p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .services { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
+  .svc { padding: 34px 28px 34px 0; border-bottom: 1px solid var(--line); }
+  .svc .n { font-family: Unbounded, sans-serif; font-weight: 800; color: #3a3540; font-size: 32px; transition: color .3s; }
+  .svc:hover .n { color: var(--gold); }
+  .svc h4 { font-size: 20px; margin: 10px 0 8px; }
+  .svc p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+  .contact { text-align: center; }
+  .contact .big { font-family: Unbounded, sans-serif; font-weight: 800; font-size: clamp(40px, 8vw, 130px); line-height: 1; letter-spacing: -.03em; }
+  .contact .big span { color: transparent; -webkit-text-stroke: 2px var(--ink); }
+  .contact a.btn { display: inline-block; margin-top: 40px; background: var(--gold); color: #111; font-weight: 800; text-decoration: none; padding: 18px 34px; border-radius: 99px; font-size: 16px; }
+  footer { padding: 32px clamp(16px, 6vw, 96px); border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .reveal { opacity: 0; transform: translateY(40px); }
+
+  @media (max-width: 860px) {
+    nav ul { display: none; }
+    .cap.left, .cap.right { left: 16px; right: 16px; top: auto; bottom: 14vh; transform: none; max-width: none; text-align: left; }
+    .works { grid-template-columns: 1fr 1fr; }
+    .work:first-child { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 10; }
+    .services { grid-template-columns: 1fr; }
+    .scroll-hint { display: none; }
+  }
+</style>
+</head>
+<body class="loading">
+
+<div id="loader">
+  <div class="lbl">SYSTEM BOOTING</div>
+  <div class="pct"><span id="pct">0</span>%</div>
+  <div class="bar"><i id="bar"></i></div>
+</div>
+
+<nav>
+  <div class="logo">KIMITE<b>.</b>STUDIO</div>
+  <ul><li><a href="#works">Works</a></li><li><a href="#services">Services</a></li><li><a href="#about">About</a></li></ul>
+  <a class="cta" href="#contact">프로젝트 문의</a>
+</nav>
+
+<div id="story">
+  <div class="stage">
+    <canvas id="canvas"></canvas>
+    <div class="flash" id="flash"></div>
+    <div class="snapflash" id="snapflash"></div>
+    <div class="glassflash" id="glassflash"></div>
+    <div class="vignette"></div>
+    <div class="grain"></div>
+    <div class="progress" id="progress"></div>
+
+    <div class="cap left" data-cap="1">
+      <div class="k">KIMITE STUDIO</div>
+      <h1 class="disp">Loading<br>ideas…</h1>
+      <p>AI VIDEO STUDIO</p>
+    </div>
+    <div class="cap right" data-cap="2">
+      <div class="k">ABOUT</div>
+      <h2>머릿속 장면을<br>화면 위로.</h2>
+      <p>떠올린 이야기를 AI로 영상이 되게 합니다.</p>
+    </div>
+    <div class="cap bottom" data-cap="3">
+      <div class="huge">EYES <b>ON</b></div>
+    </div>
+    <div class="cap left" data-cap="4">
+      <div class="k">NEXT SCENE</div>
+      <h2 class="disp">Your story,<br><span class="red">next.</span></h2>
+      <p>광고 · 뮤직비디오 · 영상 선물 · 레슨 · 컨설팅</p>
+    </div>
+
+    <a class="pop" id="pop" href="#works">See the work <i>↓</i></a>
+
+    <div class="status">UNIT · KIMITE-01<br>OPTIC SENSOR · <b id="sensor">OFFLINE</b></div>
+    <div class="scroll-hint">SCROLL<i></i></div>
+  </div>
+</div>
+
+<section class="block" id="works">
+  <div class="eyebrow reveal">RECENT WORKS</div>
+  <h3 class="reveal">최근 화면 위로<br>꺼낸 장면들.</h3>
+  <div class="works">
+    <div class="work reveal"><div class="t">숏폼</div><h4>AI를 이용해 화면 속 세상에 들어가다</h4><p>뮤직비디오부터 영화, 애니메이션까지. AI로 내 얼굴을 다양한 이야기의 주인공으로.</p></div>
+    <div class="work reveal"><div class="t">AI 뮤직비디오</div><h4>AI COVER 뮤직비디오</h4><p>기존 음원 편곡과 영상화를 AI로.</p></div>
+    <div class="work reveal"><div class="t">AI 뮤직비디오</div><h4>GOLDSKINZ 뮤직비디오</h4><p>기존 음원을 생성형 AI 비주얼로 재해석.</p></div>
+    <div class="work reveal"><div class="t">브랜드 필름</div><h4>에어베이퍼 홈페이지 루프 영상</h4><p>제품 속 캐릭터가 브랜드의 첫인상으로.</p></div>
+    <div class="work reveal"><div class="t">영상 상품</div><h4>소중한 사람을 위한 영상 선물</h4><p>가족의 기억을 따뜻한 영상으로.</p></div>
+  </div>
+</section>
+
+<section class="block" id="services">
+  <div class="eyebrow reveal">SERVICES</div>
+  <h3 class="reveal">필요한 장면이 무엇이든.</h3>
+  <div class="services">
+    <div class="svc reveal"><div class="n">01</div><h4>시네마틱 브랜드 필름</h4><p>브랜드의 세계관을 영화적으로 풀어내는 AI 영상</p></div>
+    <div class="svc reveal"><div class="n">02</div><h4>광고 · 커머스 영상</h4><p>숏폼부터 풀 버전까지, 제품 광고와 커머스 콘텐츠</p></div>
+    <div class="svc reveal"><div class="n">03</div><h4>뮤직비디오 · 내러티브</h4><p>아티스트의 감성을 시각화하는 뮤직비디오와 숏필름</p></div>
+    <div class="svc reveal"><div class="n">04</div><h4>추모영상 · 개인 프로젝트</h4><p>소중한 순간을 담는 개인 맞춤형 영상</p></div>
+    <div class="svc reveal"><div class="n">05</div><h4>AI 영상 제작 레슨</h4><p>프롬프트, 워크플로, 툴 활용 노하우 공유</p></div>
+    <div class="svc reveal"><div class="n">06</div><h4>AI 워크플로 컨설팅</h4><p>팀을 위한 AI 영상 제작 프로세스 구축</p></div>
+  </div>
+</section>
+
+<section class="block contact" id="contact">
+  <div class="eyebrow reveal">CONTACT</div>
+  <div class="big reveal">YOUR STORY,<br><span>NEXT.</span></div>
+  <a class="btn reveal" href="https://kimite.kr/#contact">이야기 들려주기 →</a>
+</section>
+
+<footer id="about"><span>© KIMITE STUDIO</span><span>리디자인 시안</span></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(async () => {
+  gsap.registerPlugin(ScrollTrigger);
+
+  // ---- config -------------------------------------------------------------
+  // Where the robotic eye sits in the last frame of the wake clip (0..1 of the frame).
+  const EYE = { x: 0.5041, y: 0.3560 };   // robot eye in the last frame of the pod wake clip
+  // --- filled in after the clips are made ---
+  const SHATTER_AT = 46 / 120; // the glass breaks at burst frame 47
+  const DRAW_CRACKS = false;   // the video already has glowing cracks; code adds shake, flash and shards only
+  const SNAP_LAST = 100;       // snap clip cut at frame 100 so it doesn't linger
+  const SNAP_AT = 78 / 99;     // spark at snap frame 79
+  // Scroll timeline (0..1 of the pinned story). Each clip starts on the previous clip's last frame.
+  const FR = 'pod-frames/';
+  const SEGMENTS = [
+    { clip: 'wake',  a: 0.00, b: 0.26 },                                  // in the capsule: lifts head, opens eyes
+    { eye: true,     a: 0.26, b: 0.36 },                                  // hold while the robot eye powers on
+    { clip: 'burst', a: 0.36, b: 0.66, crossfade: 0.04, afterEye: true,   // glass cracks, shatters, he lands
+      shatterAt: SHATTER_AT, crackLen: 0.25 },
+    { clip: 'snap',  a: 0.66, b: 1.00, crossfade: 0.06, lastFrame: SNAP_LAST, snapAt: SNAP_AT },  // grin + finger snap
+  ];
+  // impact point of the glass (fraction of the burst frame) and the face (zoom focus, fraction of the wake frame)
+  const GLASS = { x: 0.5, y: 0.5 };
+  const FACE = { x: EYE.x - 0.03, y: EYE.y + 0.03 };
+
+  // ---- load frames ---------------------------------------------------------
+  const manifest = await fetch(FR + 'manifest.json').then(r => r.json());
+  const clips = SEGMENTS.filter(s => s.clip && manifest[s.clip]).map(s => s.clip);
+  // Lock the camera: the video AI starts each chained clip slightly zoomed/shifted vs. the previous
+  // clip's last frame (align.json, made by .tools/align_clips.py). Chain those corrections and keep
+  // each clip's correction for the whole clip, so the character never moves on screen.
+  // A transform maps clip coords onto the first clip, per axis: p' = s * (p - centre) + centre + d
+  // (horizontal and vertical scale differ: the AI also squashes/stretches clips slightly)
+  const ALIGN = await fetch(FR + 'align.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  const LOCK = {};
+  let acc = { sx: 1, sy: 1, dx: 0, dy: 0 };
+  for (const c of clips) {
+    const a = ALIGN[c];
+    if (a) {
+      const ax = a.sx ?? a.s, ay = a.sy ?? a.s;
+      acc = { sx: acc.sx * ax, sy: acc.sy * ay, dx: acc.sx * a.dx + acc.dx, dy: acc.sy * a.dy + acc.dy };
+    }
+    LOCK[c] = acc;
+  }
+  // Re-base on the burst clip (the closest framing) so no clip is ever drawn smaller than the screen.
+  const REF = LOCK.burst;
+  if (REF) for (const c of clips) {
+    const L = LOCK[c];
+    LOCK[c] = { sx: L.sx / REF.sx, sy: L.sy / REF.sy, dx: (L.dx - REF.dx) / REF.sx, dy: (L.dy - REF.dy) / REF.sy };
+  }
+  function place(rect, t) {
+    if (!t) return rect;
+    const w = rect.w * t.sx, h = rect.h * t.sy;
+    return { x: rect.x + rect.w / 2 - w / 2 + t.dx * rect.w, y: rect.y + rect.h / 2 - h / 2 + t.dy * rect.h, w, h };
+  }
+  const frames = {};
+  let loaded = 0;
+  const pctEl = document.getElementById('pct'), barEl = document.getElementById('bar');
+  // The loader waits for the first clip only; later clips keep loading in the background.
+  const firstCount = manifest[clips[0]];
+  let releaseFirst;
+  const firstReady = new Promise(r => releaseFirst = r);
+  clips.forEach(c => {
+    frames[c] = Array.from({ length: manifest[c] }, (_, i) => {
+      const img = new Image();
+      img.onload = img.onerror = () => {
+        if (c === clips[0]) {
+          loaded++;
+          const p = Math.round(loaded / firstCount * 100);
+          pctEl.textContent = Math.min(p, 100); barEl.style.width = Math.min(p, 100) + '%';
+          if (loaded >= firstCount) releaseFirst();
+        }
+      };
+      img.src = `${FR}${c}/${String(i + 1).padStart(4, '0')}.webp`;
+      return img;
+    });
+  });
+  await firstReady;
+
+  // ---- canvas --------------------------------------------------------------
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let cw = 0, ch = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    cw = canvas.clientWidth; ch = canvas.clientHeight;
+    canvas.width = cw * dpr; canvas.height = ch * dpr;
+    render();
+  }
+  // "cover" fit, nudged so the character stays centred on narrow screens
+  function fit(img) {
+    const s = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+    const w = img.naturalWidth * s, h = img.naturalHeight * s;
+    return { x: (cw - w) / 2, y: (ch - h) / 2, w, h };
+  }
+
+  const state = { clip: 'wake', frame: 0, eye: 0, shake: 0 };
+  const flashEl = document.getElementById('flash');
+  const snapEl = document.getElementById('snapflash');
+  const popEl = document.getElementById('pop');
+  const sensorEl = document.getElementById('sensor');
+
+  function render() {
+    const img = frames[state.clip][Math.round(state.frame)];
+    if (!img || !img.complete || !img.naturalWidth || !cw) return;  // not loaded yet: keep the last drawn frame
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = '#0e0d0f'; ctx.fillRect(0, 0, cw, ch);
+    // camera zoom around the face (focus taken from the wake clip's framing)
+    const z = state.zoom || 1;
+    const wf = place(fit(frames.wake[0]), LOCK.wake);
+    const zx = wf.x + FACE.x * wf.w, zy = wf.y + FACE.y * wf.h;
+    ctx.setTransform(dpr * z, 0, 0, dpr * z, dpr * (zx - zx * z), dpr * (zy - zy * z));
+    // backdrop: the frame drawn 8% larger underneath, so the camera-lock shift never exposes an empty edge
+    const bd = state.under || img, bf = fit(bd);
+    ctx.drawImage(bd, bf.x - bf.w * .04, bf.y - bf.h * .04, bf.w * 1.08, bf.h * 1.08);
+    const f = place(fit(img), LOCK[state.clip]);
+    const sx = state.shake ? (Math.random() - .5) * state.shake : 0;
+    const sy = state.shake ? (Math.random() - .5) * state.shake : 0;
+    if (state.under) {
+      // crossfade: previous clip's last frame underneath, current frame fading in on top
+      const u = state.under, uf = place(fit(u), LOCK[state.underClip]);
+      ctx.drawImage(u, uf.x, uf.y, uf.w, uf.h);
+      ctx.globalAlpha = state.alpha;
+    }
+    ctx.drawImage(img, f.x + sx, f.y + sy, f.w, f.h);
+    ctx.globalAlpha = 1;
+
+    // red optic glow overlay (only while the wake clip's last frame is held)
+    // glow strength: full on the held wake frame, fading out while it crossfades into the next clip
+    const wakeLast = frames.wake[manifest.wake - 1];
+    let gs = 0, gf = f, gx = sx, gy = sy;
+    if (state.clip === 'wake') gs = state.eye;
+    else if (state.under === wakeLast) { gs = 1 - state.alpha; gf = place(fit(wakeLast), LOCK.wake); gx = gy = 0; }
+    if (gs > 0.01) {
+      const ex = gf.x + gx + EYE.x * gf.w, ey = gf.y + gy + EYE.y * gf.h;
+      const r = gf.w * 0.012;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      let g = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 9);
+      g.addColorStop(0, `rgba(255,60,50,${0.55 * gs})`);
+      g.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex, ey, r * 9, 0, 7); ctx.fill();
+      g = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 1.6);
+      g.addColorStop(0, `rgba(255,240,235,${gs})`);
+      g.addColorStop(.35, `rgba(255,40,40,${gs})`);
+      g.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex, ey, r * 1.6, 0, 7); ctx.fill();
+      // horizontal lens streak
+      ctx.globalAlpha = .5 * gs;
+      g = ctx.createLinearGradient(ex - r * 16, ey, ex + r * 16, ey);
+      g.addColorStop(0, 'rgba(255,0,0,0)'); g.addColorStop(.5, 'rgba(255,90,80,1)'); g.addColorStop(1, 'rgba(255,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(ex - r * 16, ey - r * .12, r * 32, r * .24);
+      ctx.restore();
+      flashEl.style.setProperty('--fx', ((zx + (ex - zx) * z) / cw * 100) + '%');
+      flashEl.style.setProperty('--fy', ((zy + (ey - zy) * z) / ch * 100) + '%');
+    }
+    drawFX(f);
+  }
+
+  // Power-on curve: the eye stutters (on-off-on-off) before locking on.
+  // p is 0..1 across the eye segment.
+  function eyeCurve(p) {
+    const keys = [[0, 0], [.2, 0], [.24, .9], [.28, 0], [.42, 0], [.45, .6], [.47, .1], [.52, 1], [.56, .2], [.7, 1], [1, 1]];
+    for (let i = 1; i < keys.length; i++) {
+      if (p <= keys[i][0]) {
+        const [x0, y0] = keys[i - 1], [x1, y1] = keys[i];
+        return y0 + (y1 - y0) * ((p - x0) / (x1 - x0 || 1));
+      }
+    }
+    return 1;
+  }
+
+  // ---- camera zoom: slow push-in on the face, snaps back out when the glass breaks ----------
+  const ease = x => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+  function zoomAt(p) {
+    const b = SEGMENTS[2], pShatter = b.a + (b.b - b.a) * b.shatterAt, back = (b.b - b.a) * 0.12;
+    if (p < SEGMENTS[0].b) return 1 + 0.04 * ease(p / SEGMENTS[0].b);
+    if (p < SEGMENTS[1].b) return 1.04 + 0.08 * ease((p - SEGMENTS[1].a) / (SEGMENTS[1].b - SEGMENTS[1].a));
+    if (p < pShatter) return 1.12;
+    return 1.12 - 0.12 * ease((p - pShatter) / back);
+  }
+
+  // ---- glass shatter FX (deterministic, so scrubbing backwards rewinds it) ---------------------
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const PANE = { x0: 0.34, x1: 0.66, y0: 0.15, y1: 0.85 };     // capsule glass, fraction of the frame
+  const CRACKS = Array.from({ length: 11 }, (_, i) => {
+    let ang = (i / 11) * Math.PI * 2 + rnd() * 0.4, x = 0, y = 0;
+    const pts = [[0, 0]];
+    for (let k = 0; k < 7; k++) {
+      ang += (rnd() - .5) * 0.7;
+      const len = 0.012 + rnd() * 0.022;
+      x += Math.cos(ang) * len; y += Math.sin(ang) * len * 1.3;
+      pts.push([x, y]);
+    }
+    return pts;
+  });
+  const PARTS = Array.from({ length: 190 }, (_, i) => {
+    const shard = i < 70;
+    const px = PANE.x0 + rnd() * (PANE.x1 - PANE.x0), py = PANE.y0 + rnd() * (PANE.y1 - PANE.y0);
+    const dx = px - GLASS.x, dy = py - GLASS.y, d = Math.hypot(dx, dy) + 1e-3;
+    const sp = (shard ? 0.35 : 0.5) + rnd() * 0.7;
+    return {
+      shard, px, py,
+      vx: dx / d * sp + (rnd() - .5) * .25, vy: dy / d * sp * .8 - rnd() * .35,
+      size: shard ? 0.006 + rnd() * 0.02 : 0.0018 + rnd() * 0.006,
+      grow: shard && rnd() < .25 ? 1 + rnd() * 4 : 1,          // some shards fly toward the camera
+      rot: rnd() * 6.28, spin: (rnd() - .5) * 12,
+      poly: (n => Array.from({ length: n }, (_, k) => {
+        const an = k / n * 6.28 + rnd() * .8, r = .5 + rnd() * .6;
+        return [Math.cos(an) * r, Math.sin(an) * r];
+      }))(3 + Math.floor(rnd() * 2)),
+    };
+  });
+  const glassEl = document.getElementById('glassflash');
+  function updateShatter(q, seg) {
+    const s = seg.shatterAt, c0 = s - seg.crackLen;
+    glassEl.style.opacity = 0;
+    if (q < c0) { state.fx = null; return; }
+    if (q < s) {                                   // cracks spread across the glass
+      const k = (q - c0) / seg.crackLen;
+      state.fx = { phase: 'crack', k };
+      state.shake = k * k * 5;
+      return;
+    }
+    const since = q - s;                           // shatter: flash, big shake, shards + liquid fly out
+    state.fx = { phase: 'burst', t: Math.min(1, since / 0.35) };
+    glassEl.style.opacity = Math.max(0, 1 - since / 0.03) * .85;
+    state.shake = Math.max(0, 1 - since / 0.07) * 18;
+  }
+  function drawFX(fb) {
+    const fx = state.fx;
+    if (!fx) return;
+    const ix = fb.x + GLASS.x * fb.w, iy = fb.y + GLASS.y * fb.h, U = fb.w;
+    ctx.save();
+    if (fx.phase === 'crack' && !DRAW_CRACKS) { ctx.restore(); return; }
+    if (fx.phase === 'crack') {
+      ctx.beginPath();
+      ctx.rect(fb.x + PANE.x0 * fb.w, fb.y + PANE.y0 * fb.h, (PANE.x1 - PANE.x0) * fb.w, (PANE.y1 - PANE.y0) * fb.h);
+      ctx.clip();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.shadowColor = 'rgba(160,255,255,.9)'; ctx.shadowBlur = 10;
+      for (const pts of CRACKS) {
+        const n = (pts.length - 1) * fx.k;
+        ctx.beginPath(); ctx.moveTo(ix, iy);
+        for (let i = 1; i <= Math.ceil(n); i++) {
+          const f2 = Math.min(1, n - (i - 1)), [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+          ctx.lineTo(ix + (x0 + (x1 - x0) * f2) * U, iy + (y0 + (y1 - y0) * f2) * U);
+        }
+        ctx.strokeStyle = 'rgba(235,255,255,.9)'; ctx.lineWidth = 1.2 + fx.k * 1.4; ctx.stroke();
+      }
+    } else {
+      const t = fx.t, alpha = 1 - Math.pow(t, 1.4);
+      for (const p of PARTS) {
+        const x = fb.x + p.px * fb.w + p.vx * t * U * 0.9;
+        const y = fb.y + p.py * fb.h + (p.vy * t + 0.9 * t * t) * U * 0.9;
+        const sz = p.size * U * (1 + (p.grow - 1) * t);
+        ctx.globalAlpha = alpha;
+        if (p.shard) {
+          ctx.save();
+          ctx.translate(x, y); ctx.rotate(p.rot + p.spin * t);
+          ctx.beginPath();
+          p.poly.forEach(([a, b], k) => (k ? ctx.lineTo(a * sz, b * sz) : ctx.moveTo(a * sz, b * sz)));
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(190,255,250,.35)'; ctx.fill();
+          ctx.strokeStyle = 'rgba(240,255,255,.9)'; ctx.lineWidth = 1; ctx.stroke();
+          ctx.restore();
+        } else {
+          ctx.fillStyle = 'rgba(110,255,235,.85)';
+          ctx.beginPath(); ctx.arc(x, y, sz, 0, 7); ctx.fill();
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  function update(p) {
+    const seg = SEGMENTS.find(s => p < s.b) || SEGMENTS[SEGMENTS.length - 1];
+    const q = Math.min(1, Math.max(0, (p - seg.a) / (seg.b - seg.a)));
+    state.shake = 0; state.under = null; snapEl.style.opacity = 0; state.fx = null;
+    state.zoom = zoomAt(p);
+    if (seg.crossfade && q < seg.crossfade) {
+      const prevSeg = SEGMENTS.slice(0, SEGMENTS.indexOf(seg)).reverse().find(s => s.clip), prev = prevSeg.clip;
+      const last = frames[prev] && frames[prev][(prevSeg.lastFrame || manifest[prev]) - 1];
+      if (last && last.naturalWidth) { state.under = last; state.underClip = prev; state.alpha = q / seg.crossfade; }
+    }
+    if (seg.eye) {
+      // hold the wake clip's last frame while the robot eye stutters on
+      state.clip = 'wake'; state.frame = manifest.wake - 1;
+      state.eye = eyeCurve(q);
+      // shake when it locks on, then a short red flash bridges into the next clip
+      const lock = Math.max(0, 1 - Math.abs(q - .7) / .08);
+      const build = Math.max(0, (q - .9) / .1);
+      state.shake = lock * 10;
+      flashEl.style.opacity = Math.max(lock * .35, state.eye * .06, build * .25);
+    } else if (manifest[seg.clip]) {
+      state.clip = seg.clip;
+      state.frame = q * ((seg.lastFrame || manifest[seg.clip]) - 1);
+      state.eye = seg.clip === 'wake' ? 0 : 1;
+      flashEl.style.opacity = 0;
+      if (seg.snapAt) {
+        // quick white flash + shake right on the snap, and the caption pops in
+        const k = Math.max(0, 1 - Math.abs(q - seg.snapAt) / .035);
+        snapEl.style.opacity = k * .55;
+        state.shake = k * 7;
+        popEl.classList.toggle('on', q >= seg.snapAt);
+      } else {
+        snapEl.style.opacity = 0;
+        popEl.classList.remove('on');
+      }
+      if (seg.shatterAt) updateShatter(q, seg);
+      else state.fx = null;
+      if (seg.afterEye) {
+        // flash fades out right after the eye segment
+        const fade = Math.max(0, 1 - q / .05) * .25;
+        flashEl.style.opacity = fade;
+      }
+    }
+    const on = state.eye > .5;
+    sensorEl.textContent = on ? 'ONLINE' : 'OFFLINE';
+    sensorEl.classList.toggle('on', on);
+    render();
+  }
+
+  window.__pod = { update };   // test hook: render any story position directly
+
+  // ---- smooth scroll + scroll mapping -------------------------------------
+  const lenis = new Lenis({ lerp: 0.08, smoothWheel: true });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(t => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
+
+  ScrollTrigger.create({
+    trigger: '#story', start: 'top top', end: 'bottom bottom', scrub: true,
+    onUpdate: self => {
+      update(self.progress);
+      document.getElementById('progress').style.width = (self.progress * 100) + '%';
+    }
+  });
+
+  // captions fade in/out across the story (start, end as 0..1 of the story)
+  const caps = { 1: [0, .1], 2: [.12, .24], 3: [.28, .38], 4: [.55, .68] };
+  Object.entries(caps).forEach(([id, [a, b]]) => {
+    const el = document.querySelector(`[data-cap="${id}"]`);
+    const story = document.getElementById('story');
+    const at = f => () => `top+=${f * (story.offsetHeight - innerHeight)} top`;
+    const tl = gsap.timeline({ scrollTrigger: { trigger: story, start: at(a), end: at(b), scrub: true, invalidateOnRefresh: true } });
+    if (a === 0) gsap.set(el, { opacity: 1 });
+    else tl.fromTo(el, { opacity: 0, y: 40, filter: 'blur(8px)' }, { opacity: 1, y: 0, filter: 'blur(0px)', duration: .3 });
+    tl.to(el, { opacity: 1, duration: .4 }).to(el, { opacity: 0, y: -40, filter: 'blur(8px)', duration: .3 });
+  });
+  gsap.to('.scroll-hint', { opacity: 0, scrollTrigger: { trigger: '#story', start: 'top top', end: '5% top', scrub: true } });
+
+  // section reveals
+  gsap.utils.toArray('.reveal').forEach(el => {
+    gsap.to(el, { opacity: 1, y: 0, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%' } });
+  });
+
+  addEventListener('resize', resize);
+  resize();
+  update(0);
+
+  // hide loader
+  document.getElementById('loader').classList.add('done');
+  document.body.classList.remove('loading');
+})();
+</script>
+</body>
+</html>
