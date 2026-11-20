@@ -226,11 +226,24 @@
 
   // ---- load frames ---------------------------------------------------------
   const manifest = await fetch('frames/manifest.json').then(r => r.json());
-  // Per-clip correction so each clip's first frame lines up with the previous clip's last frame
-  // (the video AI starts each clip slightly zoomed/shifted). Made by .tools/align_clips.py.
-  const ALIGN = await fetch('frames/align.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
-  const ALIGN_RAMP = 0.35;   // ease the correction away over the first 35% of the clip
   const clips = SEGMENTS.filter(s => s.clip && manifest[s.clip]).map(s => s.clip);
+  // Lock the camera: the video AI starts each chained clip slightly zoomed/shifted vs. the previous
+  // clip's last frame (align.json, made by .tools/align_clips.py). Chain those corrections and keep
+  // each clip's correction for the whole clip, so the character never moves on screen.
+  // A transform maps clip coords onto the first clip: p' = s * (p - centre) + centre + d
+  const ALIGN = await fetch('frames/align.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  const LOCK = {};
+  let acc = { s: 1, dx: 0, dy: 0 };
+  for (const c of clips) {
+    const a = ALIGN[c];
+    if (a) acc = { s: acc.s * a.s, dx: acc.s * a.dx + acc.dx, dy: acc.s * a.dy + acc.dy };
+    LOCK[c] = acc;
+  }
+  function place(rect, t) {
+    if (!t) return rect;
+    const w = rect.w * t.s, h = rect.h * t.s;
+    return { x: rect.x + rect.w / 2 - w / 2 + t.dx * rect.w, y: rect.y + rect.h / 2 - h / 2 + t.dy * rect.h, w, h };
+  }
   const frames = {};
   let loaded = 0;
   const pctEl = document.getElementById('pct'), barEl = document.getElementById('bar');
@@ -272,7 +285,7 @@
     return { x: (cw - w) / 2, y: (ch - h) / 2, w, h };
   }
 
-  const state = { clip: 'wake', frame: 0, eye: 0, shake: 0, alignT: 0 };
+  const state = { clip: 'wake', frame: 0, eye: 0, shake: 0 };
   const flashEl = document.getElementById('flash');
   const snapEl = document.getElementById('snapflash');
   const popEl = document.getElementById('pop');
@@ -284,18 +297,15 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = '#0e0d0f'; ctx.fillRect(0, 0, cw, ch);
-    const f = fit(img);
-    const al = ALIGN[state.clip];
-    if (al && state.alignT > 0) {
-      const t = state.alignT, s = 1 + (al.s - 1) * t;
-      const cx = f.x + f.w / 2 + al.dx * f.w * t, cy = f.y + f.h / 2 + al.dy * f.h * t;
-      f.w *= s; f.h *= s; f.x = cx - f.w / 2; f.y = cy - f.h / 2;
-    }
+    // backdrop: the frame drawn 8% larger underneath, so the camera-lock shift never exposes an empty edge
+    const bd = state.under || img, bf = fit(bd);
+    ctx.drawImage(bd, bf.x - bf.w * .04, bf.y - bf.h * .04, bf.w * 1.08, bf.h * 1.08);
+    const f = place(fit(img), LOCK[state.clip]);
     const sx = state.shake ? (Math.random() - .5) * state.shake : 0;
     const sy = state.shake ? (Math.random() - .5) * state.shake : 0;
     if (state.under) {
       // crossfade: previous clip's last frame underneath, current frame fading in on top
-      const u = state.under, uf = fit(u);
+      const u = state.under, uf = place(fit(u), LOCK[state.underClip]);
       ctx.drawImage(u, uf.x, uf.y, uf.w, uf.h);
       ctx.globalAlpha = state.alpha;
     }
@@ -307,7 +317,7 @@
     const wakeLast = frames.wake[manifest.wake - 1];
     let gs = 0, gf = f, gx = sx, gy = sy;
     if (state.clip === 'wake') gs = state.eye;
-    else if (state.under === wakeLast) { gs = 1 - state.alpha; gf = fit(wakeLast); gx = gy = 0; }
+    else if (state.under === wakeLast) { gs = 1 - state.alpha; gf = place(fit(wakeLast), LOCK.wake); gx = gy = 0; }
     if (gs > 0.01) {
       const ex = gf.x + gx + EYE.x * gf.w, ey = gf.y + gy + EYE.y * gf.h;
       const r = gf.w * 0.012;
@@ -349,15 +359,11 @@
   function update(p) {
     const seg = SEGMENTS.find(s => p < s.b) || SEGMENTS[SEGMENTS.length - 1];
     const q = Math.min(1, Math.max(0, (p - seg.a) / (seg.b - seg.a)));
-    state.shake = 0; state.under = null; snapEl.style.opacity = 0; state.alignT = 0;
-    if (seg.clip && q < ALIGN_RAMP) {
-      const u = 1 - q / ALIGN_RAMP;
-      state.alignT = u * u * (3 - 2 * u);   // smoothstep: full correction at the cut, gone by the ramp end
-    }
+    state.shake = 0; state.under = null; snapEl.style.opacity = 0;
     if (seg.crossfade && q < seg.crossfade) {
       const prev = SEGMENTS.slice(0, SEGMENTS.indexOf(seg)).reverse().find(s => s.clip).clip;
       const last = frames[prev] && frames[prev][manifest[prev] - 1];
-      if (last && last.naturalWidth) { state.under = last; state.alpha = q / seg.crossfade; }
+      if (last && last.naturalWidth) { state.under = last; state.underClip = prev; state.alpha = q / seg.crossfade; }
     }
     if (seg.eye) {
       // hold the wake clip's last frame while the robot eye stutters on
