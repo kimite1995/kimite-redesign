@@ -53,6 +53,17 @@
 
   .snapflash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(45% 45% at 40% 33%, rgba(255,250,235,.95), rgba(255,210,120,.35) 40%, transparent 75%); mix-blend-mode: screen; }
 
+  /* "See the work" pops in on the finger snap */
+  .pop { position: absolute; z-index: 7; left: 50%; bottom: 11vh; transform: translateX(-50%) scale(.5); opacity: 0; pointer-events: none;
+         font-family: Unbounded, sans-serif; font-weight: 800; font-size: clamp(36px, 6.5vw, 112px); letter-spacing: -.03em; line-height: 1; white-space: nowrap;
+         color: var(--ink); text-decoration: none; text-shadow: 0 6px 40px rgba(0,0,0,.8); transition: opacity .25s, transform .25s; }
+  .pop i { font-style: normal; color: var(--gold); display: inline-block; }
+  .pop.on { opacity: 1; pointer-events: auto; animation: pop .55s cubic-bezier(.2, 1.7, .35, 1) both; }
+  .pop.on i { animation: bob 1.2s ease-in-out .5s infinite; }
+  .pop:hover i { color: var(--red); }
+  @keyframes pop { 0% { transform: translateX(-50%) scale(.4); opacity: 0; filter: blur(10px); } 60% { opacity: 1; filter: blur(0); } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
+  @keyframes bob { 50% { transform: translateY(14%); } }
+
   /* story captions */
   .cap { position: absolute; z-index: 5; pointer-events: none; opacity: 0; will-change: opacity, transform; }
   .cap.left { left: clamp(16px, 6vw, 96px); top: 50%; transform: translateY(-50%); max-width: 40vw; }
@@ -154,6 +165,8 @@
       <p>광고 · 뮤직비디오 · 영상 선물 · 레슨 · 컨설팅</p>
     </div>
 
+    <a class="pop" id="pop" href="#works">See the work <i>↓</i></a>
+
     <div class="status">UNIT · KIMITE-01<br>OPTIC SENSOR · <b id="sensor">OFFLINE</b></div>
     <div class="scroll-hint">SCROLL<i></i></div>
   </div>
@@ -207,7 +220,8 @@
     { clip: 'wake',  a: 0.00, b: 0.30 },   // wakes up, taps temple (robot eye dark)
     { eye: true,     a: 0.30, b: 0.42 },   // hold last frame while the eye powers on
     { clip: 'point', a: 0.42, b: 0.71, crossfade: 0.06 },   // points at the viewer
-    { clip: 'snap',  a: 0.71, b: 1.00, crossfade: 0.06, snapAt: 0.567 },  // snaps his fingers (spark at frame 69)
+    // snaps his fingers (spark at frame 69); clip trimmed at frame 95 so it doesn't linger after the snap
+    { clip: 'snap',  a: 0.71, b: 1.00, crossfade: 0.06, lastFrame: 95, snapAt: 68 / 94 },
   ];
 
   // ---- load frames ---------------------------------------------------------
@@ -261,6 +275,7 @@
   const state = { clip: 'wake', frame: 0, eye: 0, shake: 0, alignT: 0 };
   const flashEl = document.getElementById('flash');
   const snapEl = document.getElementById('snapflash');
+  const popEl = document.getElementById('pop');
   const sensorEl = document.getElementById('sensor');
 
   function render() {
@@ -355,16 +370,18 @@
       flashEl.style.opacity = Math.max(lock * .35, state.eye * .06, build * .25);
     } else if (manifest[seg.clip]) {
       state.clip = seg.clip;
-      state.frame = q * (manifest[seg.clip] - 1);
+      state.frame = q * ((seg.lastFrame || manifest[seg.clip]) - 1);
       state.eye = seg.clip === 'wake' ? 0 : 1;
       flashEl.style.opacity = 0;
       if (seg.snapAt) {
-        // quick white flash + shake right on the snap
+        // quick white flash + shake right on the snap, and the caption pops in
         const k = Math.max(0, 1 - Math.abs(q - seg.snapAt) / .035);
         snapEl.style.opacity = k * .55;
         state.shake = k * 7;
+        popEl.classList.toggle('on', q >= seg.snapAt);
       } else {
         snapEl.style.opacity = 0;
+        popEl.classList.remove('on');
       }
       if (seg.clip === 'point') {
         // flash fades out right after the eye segment
