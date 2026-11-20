@@ -206,12 +206,16 @@
   const SEGMENTS = [
     { clip: 'wake',  a: 0.00, b: 0.30 },   // wakes up, taps temple (robot eye dark)
     { eye: true,     a: 0.30, b: 0.42 },   // hold last frame while the eye powers on
-    { clip: 'point', a: 0.42, b: 0.71 },   // points at the viewer
-    { clip: 'snap',  a: 0.71, b: 1.00, snapAt: 0.567 },     // snaps his fingers (spark at frame 69)
+    { clip: 'point', a: 0.42, b: 0.71, crossfade: 0.06 },   // points at the viewer
+    { clip: 'snap',  a: 0.71, b: 1.00, crossfade: 0.06, snapAt: 0.567 },  // snaps his fingers (spark at frame 69)
   ];
 
   // ---- load frames ---------------------------------------------------------
   const manifest = await fetch('frames/manifest.json').then(r => r.json());
+  // Per-clip correction so each clip's first frame lines up with the previous clip's last frame
+  // (the video AI starts each clip slightly zoomed/shifted). Made by .tools/align_clips.py.
+  const ALIGN = await fetch('frames/align.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  const ALIGN_RAMP = 0.35;   // ease the correction away over the first 35% of the clip
   const clips = SEGMENTS.filter(s => s.clip && manifest[s.clip]).map(s => s.clip);
   const frames = {};
   let loaded = 0;
@@ -254,7 +258,7 @@
     return { x: (cw - w) / 2, y: (ch - h) / 2, w, h };
   }
 
-  const state = { clip: 'wake', frame: 0, eye: 0, shake: 0 };
+  const state = { clip: 'wake', frame: 0, eye: 0, shake: 0, alignT: 0 };
   const flashEl = document.getElementById('flash');
   const snapEl = document.getElementById('snapflash');
   const sensorEl = document.getElementById('sensor');
@@ -266,6 +270,12 @@
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.fillStyle = '#0e0d0f'; ctx.fillRect(0, 0, cw, ch);
     const f = fit(img);
+    const al = ALIGN[state.clip];
+    if (al && state.alignT > 0) {
+      const t = state.alignT, s = 1 + (al.s - 1) * t;
+      const cx = f.x + f.w / 2 + al.dx * f.w * t, cy = f.y + f.h / 2 + al.dy * f.h * t;
+      f.w *= s; f.h *= s; f.x = cx - f.w / 2; f.y = cy - f.h / 2;
+    }
     const sx = state.shake ? (Math.random() - .5) * state.shake : 0;
     const sy = state.shake ? (Math.random() - .5) * state.shake : 0;
     if (state.under) {
@@ -278,22 +288,27 @@
     ctx.globalAlpha = 1;
 
     // red optic glow overlay (only while the wake clip's last frame is held)
-    if (state.eye > 0.01 && state.clip === 'wake') {
-      const ex = f.x + sx + EYE.x * f.w, ey = f.y + sy + EYE.y * f.h;
-      const r = f.w * 0.012;
+    // glow strength: full on the held wake frame, fading out while it crossfades into the next clip
+    const wakeLast = frames.wake[manifest.wake - 1];
+    let gs = 0, gf = f, gx = sx, gy = sy;
+    if (state.clip === 'wake') gs = state.eye;
+    else if (state.under === wakeLast) { gs = 1 - state.alpha; gf = fit(wakeLast); gx = gy = 0; }
+    if (gs > 0.01) {
+      const ex = gf.x + gx + EYE.x * gf.w, ey = gf.y + gy + EYE.y * gf.h;
+      const r = gf.w * 0.012;
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       let g = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 9);
-      g.addColorStop(0, `rgba(255,60,50,${0.55 * state.eye})`);
+      g.addColorStop(0, `rgba(255,60,50,${0.55 * gs})`);
       g.addColorStop(1, 'rgba(255,0,0,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex, ey, r * 9, 0, 7); ctx.fill();
       g = ctx.createRadialGradient(ex, ey, 0, ex, ey, r * 1.6);
-      g.addColorStop(0, `rgba(255,240,235,${state.eye})`);
-      g.addColorStop(.35, `rgba(255,40,40,${state.eye})`);
+      g.addColorStop(0, `rgba(255,240,235,${gs})`);
+      g.addColorStop(.35, `rgba(255,40,40,${gs})`);
       g.addColorStop(1, 'rgba(255,0,0,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ex, ey, r * 1.6, 0, 7); ctx.fill();
       // horizontal lens streak
-      ctx.globalAlpha = .5 * state.eye;
+      ctx.globalAlpha = .5 * gs;
       g = ctx.createLinearGradient(ex - r * 16, ey, ex + r * 16, ey);
       g.addColorStop(0, 'rgba(255,0,0,0)'); g.addColorStop(.5, 'rgba(255,90,80,1)'); g.addColorStop(1, 'rgba(255,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(ex - r * 16, ey - r * .12, r * 32, r * .24);
@@ -319,9 +334,13 @@
   function update(p) {
     const seg = SEGMENTS.find(s => p < s.b) || SEGMENTS[SEGMENTS.length - 1];
     const q = Math.min(1, Math.max(0, (p - seg.a) / (seg.b - seg.a)));
-    state.shake = 0; state.under = null; snapEl.style.opacity = 0;
+    state.shake = 0; state.under = null; snapEl.style.opacity = 0; state.alignT = 0;
+    if (seg.clip && q < ALIGN_RAMP) {
+      const u = 1 - q / ALIGN_RAMP;
+      state.alignT = u * u * (3 - 2 * u);   // smoothstep: full correction at the cut, gone by the ramp end
+    }
     if (seg.crossfade && q < seg.crossfade) {
-      const prev = SEGMENTS[SEGMENTS.indexOf(seg) - 1].clip;
+      const prev = SEGMENTS.slice(0, SEGMENTS.indexOf(seg)).reverse().find(s => s.clip).clip;
       const last = frames[prev] && frames[prev][manifest[prev] - 1];
       if (last && last.naturalWidth) { state.under = last; state.alpha = q / seg.crossfade; }
     }
