@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KIMITE STUDIO — 리디자인 시안</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
 <style>
   :root {
@@ -25,7 +25,7 @@
   /* ---------- loader ---------- */
   #loader { position: fixed; inset: 0; z-index: 100; background: #050405; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; transition: opacity .8s ease, visibility .8s; }
   #loader.done { opacity: 0; visibility: hidden; }
-  #loader .pct { font-family: Anton, sans-serif; font-size: clamp(64px, 12vw, 140px); line-height: 1; }
+  #loader .pct { font-family: Unbounded, sans-serif; font-weight: 800; font-size: clamp(52px, 9vw, 120px); line-height: 1; }
   #loader .pct span { color: var(--gold); }
   #loader .lbl { font-size: 12px; letter-spacing: .4em; color: var(--muted); }
   #loader .bar { width: min(320px, 60vw); height: 2px; background: var(--line); overflow: hidden; }
@@ -33,7 +33,7 @@
 
   /* ---------- nav ---------- */
   nav { position: fixed; inset: 0 0 auto 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 22px clamp(16px, 4vw, 48px); }
-  nav .logo { font-family: Anton, sans-serif; font-size: 22px; letter-spacing: .04em; }
+  nav .logo { font-family: Unbounded, sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
   nav .logo b { color: var(--gold); font-weight: 400; }
   nav ul { display: flex; gap: 28px; list-style: none; font-size: 14px; font-weight: 600; color: #cfc9d3; }
   nav a { color: inherit; text-decoration: none; }
@@ -51,6 +51,8 @@
   /* flash when the eye powers on */
   .flash { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(80% 80% at var(--fx, 53%) var(--fy, 19%), rgba(255,90,80,.95), rgba(190,10,10,.8) 40%, rgba(60,0,0,.75) 100%); opacity: 0; }
 
+  .snapflash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(45% 45% at 40% 33%, rgba(255,250,235,.95), rgba(255,210,120,.35) 40%, transparent 75%); mix-blend-mode: screen; }
+
   /* story captions */
   .cap { position: absolute; z-index: 5; pointer-events: none; opacity: 0; will-change: opacity, transform; }
   .cap.left { left: clamp(16px, 6vw, 96px); top: 50%; transform: translateY(-50%); max-width: 40vw; }
@@ -63,8 +65,9 @@
   .cap h2 { font-size: clamp(28px, 4vw, 60px); }
   .cap p { margin-top: 16px; font-size: clamp(14px, 1.2vw, 17px); color: #bdb7c2; line-height: 1.7; }
   .cap .red { color: var(--red); text-shadow: 0 0 24px rgba(255,42,42,.6); }
-  .cap .huge { font-family: Anton, sans-serif; font-size: clamp(64px, 13vw, 220px); line-height: .9; font-weight: 400; letter-spacing: 0; }
-  .cap .huge b { color: var(--gold); font-weight: 400; }
+  .cap .huge { font-family: Unbounded, sans-serif; font-size: clamp(48px, 9vw, 160px); line-height: .95; font-weight: 800; letter-spacing: -.03em; }
+  .cap .huge b { color: var(--gold); font-weight: 800; }
+  .cap .disp { font-family: Unbounded, sans-serif; font-weight: 700; letter-spacing: -.03em; }
 
   .status { position: absolute; left: clamp(16px, 4vw, 48px); bottom: 28px; z-index: 6; font: 600 11px/1.8 ui-monospace, Consolas, monospace; color: var(--muted); letter-spacing: .12em; }
   .status b { color: #5f5a66; font-weight: 600; }
@@ -76,7 +79,7 @@
 
   /* ---------- regular sections ---------- */
   section.block { position: relative; z-index: 2; background: var(--bg); padding: clamp(80px, 12vw, 160px) clamp(16px, 6vw, 96px); }
-  .eyebrow { font-family: Anton, sans-serif; font-size: 14px; letter-spacing: .2em; color: var(--gold); }
+  .eyebrow { font-family: Unbounded, sans-serif; font-weight: 600; font-size: 12px; letter-spacing: .15em; color: var(--gold); }
   .block h3 { font-size: clamp(30px, 4.4vw, 64px); font-weight: 800; letter-spacing: -.02em; margin: 14px 0 48px; line-height: 1.15; }
   .works { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; }
   .work { position: relative; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; background: #19171b; border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: flex-end; padding: 22px; transition: transform .5s cubic-bezier(.2,.8,.2,1), border-color .3s; }
@@ -88,12 +91,12 @@
   .work p { font-size: 13px; color: var(--muted); line-height: 1.6; }
   .services { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
   .svc { padding: 34px 28px 34px 0; border-bottom: 1px solid var(--line); }
-  .svc .n { font-family: Anton, sans-serif; color: #3a3540; font-size: 40px; transition: color .3s; }
+  .svc .n { font-family: Unbounded, sans-serif; font-weight: 800; color: #3a3540; font-size: 32px; transition: color .3s; }
   .svc:hover .n { color: var(--gold); }
   .svc h4 { font-size: 20px; margin: 10px 0 8px; }
   .svc p { color: var(--muted); font-size: 14px; line-height: 1.6; }
   .contact { text-align: center; }
-  .contact .big { font-family: Anton, sans-serif; font-size: clamp(56px, 11vw, 180px); line-height: .95; }
+  .contact .big { font-family: Unbounded, sans-serif; font-weight: 800; font-size: clamp(40px, 8vw, 130px); line-height: 1; letter-spacing: -.03em; }
   .contact .big span { color: transparent; -webkit-text-stroke: 2px var(--ink); }
   .contact a.btn { display: inline-block; margin-top: 40px; background: var(--gold); color: #111; font-weight: 800; text-decoration: none; padding: 18px 34px; border-radius: 99px; font-size: 16px; }
   footer { padding: 32px clamp(16px, 6vw, 96px); border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
@@ -127,13 +130,14 @@
   <div class="stage">
     <canvas id="canvas"></canvas>
     <div class="flash" id="flash"></div>
+    <div class="snapflash" id="snapflash"></div>
     <div class="vignette"></div>
     <div class="grain"></div>
     <div class="progress" id="progress"></div>
 
     <div class="cap left" data-cap="1">
       <div class="k">KIMITE STUDIO</div>
-      <h1>Loading<br>ideas…</h1>
+      <h1 class="disp">Loading<br>ideas…</h1>
       <p>AI VIDEO STUDIO</p>
     </div>
     <div class="cap right" data-cap="2">
@@ -146,7 +150,7 @@
     </div>
     <div class="cap left" data-cap="4">
       <div class="k">NEXT SCENE</div>
-      <h2>Your story,<br><span class="red">next.</span></h2>
+      <h2 class="disp">Your story,<br><span class="red">next.</span></h2>
       <p>광고 · 뮤직비디오 · 영상 선물 · 레슨 · 컨설팅</p>
     </div>
 
@@ -203,7 +207,7 @@
     { clip: 'wake',  a: 0.00, b: 0.30 },   // wakes up, taps temple (robot eye dark)
     { eye: true,     a: 0.30, b: 0.42 },   // hold last frame while the eye powers on
     { clip: 'point', a: 0.42, b: 0.71 },   // points at the viewer
-    { clip: 'vibe',  a: 0.71, b: 1.00, crossfade: 0.08 },   // nods, fixes collar (starts closer, so crossfade in)
+    { clip: 'snap',  a: 0.71, b: 1.00, snapAt: 0.567 },     // snaps his fingers (spark at frame 69)
   ];
 
   // ---- load frames ---------------------------------------------------------
@@ -252,6 +256,7 @@
 
   const state = { clip: 'wake', frame: 0, eye: 0, shake: 0 };
   const flashEl = document.getElementById('flash');
+  const snapEl = document.getElementById('snapflash');
   const sensorEl = document.getElementById('sensor');
 
   function render() {
@@ -314,7 +319,7 @@
   function update(p) {
     const seg = SEGMENTS.find(s => p < s.b) || SEGMENTS[SEGMENTS.length - 1];
     const q = Math.min(1, Math.max(0, (p - seg.a) / (seg.b - seg.a)));
-    state.shake = 0; state.under = null;
+    state.shake = 0; state.under = null; snapEl.style.opacity = 0;
     if (seg.crossfade && q < seg.crossfade) {
       const prev = SEGMENTS[SEGMENTS.indexOf(seg) - 1].clip;
       const last = frames[prev] && frames[prev][manifest[prev] - 1];
@@ -334,6 +339,14 @@
       state.frame = q * (manifest[seg.clip] - 1);
       state.eye = seg.clip === 'wake' ? 0 : 1;
       flashEl.style.opacity = 0;
+      if (seg.snapAt) {
+        // quick white flash + shake right on the snap
+        const k = Math.max(0, 1 - Math.abs(q - seg.snapAt) / .035);
+        snapEl.style.opacity = k * .55;
+        state.shake = k * 7;
+      } else {
+        snapEl.style.opacity = 0;
+      }
       if (seg.clip === 'point') {
         // flash fades out right after the eye segment
         const fade = Math.max(0, 1 - q / .05) * .25;
