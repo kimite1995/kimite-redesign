@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Aiseen 캐릭터 시안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root { --bg:#F7FAFC; --card:#FFFFFF; --ink:#0F172A; --sub:#64748B; --blue:#2F6BFF; --line:#E2E8F0; }
+  * { box-sizing:border-box; margin:0; }
+  html { background:var(--bg); }
+  body { background:var(--bg); color:var(--ink); font-family:Pretendard, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+         padding:36px 16px 140px; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1180px; margin:0 auto; }
+  header .logo { height:26px; display:block; margin-bottom:18px; }
+  header h1 { font-size:clamp(22px, 3.2vw, 34px); font-weight:800; letter-spacing:-.025em; line-height:1.25; }
+  header p { color:var(--sub); margin-top:10px; font-size:15px; line-height:1.6; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:22px; margin-top:22px; overflow:hidden;
+           box-shadow:0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.04); }
+  .panel h2 { font-size:15px; font-weight:700; padding:16px 20px 4px; display:flex; gap:10px; align-items:center; }
+  .panel h2 small { color:var(--sub); font-weight:500; font-size:13px; }
+  .tag { background:#EEF3FF; color:var(--blue); border-radius:999px; padding:3px 11px; font-size:12px; font-weight:700; }
+  .stage { position:relative; height:clamp(150px, 29vw, 340px); background:var(--bg); margin:10px 12px 0; border-radius:16px; overflow:hidden; }
+  .stage canvas, .stage svg { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .names { position:relative; height:40px; margin:0 12px 8px; }
+  .names span { position:absolute; top:10px; transform:translateX(-50%); font-size:13px; font-weight:600; color:var(--sub); white-space:nowrap; }
+  .names span.hero { color:var(--blue); }
+  .err { position:absolute; inset:0; display:grid; place-items:center; color:var(--sub); font-size:14px; }
+  .bar { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); display:flex; gap:8px; padding:8px;
+         background:rgba(255,255,255,.92); backdrop-filter:blur(10px); border:1px solid var(--line); border-radius:999px;
+         box-shadow:0 10px 30px rgba(15,23,42,.12); max-width:calc(100vw - 24px); overflow-x:auto; }
+  .bar button { font:inherit; font-size:14px; font-weight:700; border:0; border-radius:999px; padding:11px 18px; cursor:pointer;
+                background:#EEF3FF; color:var(--blue); white-space:nowrap; transition:transform .15s, background .15s; }
+  .bar button:hover { background:#DCE6FF; }
+  .bar button:active { transform:scale(.95); }
+  .bar button.primary { background:var(--blue); color:#fff; }
+  @media (max-width:560px) {
+    body { padding-top:24px; }
+    .bar { bottom:12px; gap:4px; padding:6px; }
+    .bar button { font-size:13px; padding:10px 12px; }
+    .names span { font-size:11px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img class="logo" src="assets/logos/aiseen_logo.png" alt="Aiseen">
+    <h1>캐릭터 시안 · 3D vs 2D</h1>
+    <p>아래 버튼을 누르면 두 버전이 동시에 같은 동작을 해요. 3D는 마우스를 따라 고개를 돌려요.</p>
+  </header>
+
+  <section class="panel">
+    <h2><span class="tag">A</span> 3D <small>입체 장난감 느낌</small></h2>
+    <div class="stage" id="stage3d"><canvas id="c3d"></canvas></div>
+    <div class="names" data-names></div>
+  </section>
+
+  <section class="panel">
+    <h2><span class="tag">B</span> 2D <small>로고 그대로 평면</small></h2>
+    <div class="stage" id="stage2d"></div>
+    <div class="names" data-names></div>
+  </section>
+</div>
+
+<nav class="bar">
+  <button class="primary" data-act="peek">빼꼼</button>
+  <button data-act="blink">깜빡</button>
+  <button data-act="tilt">갸웃</button>
+  <button data-act="lightUp">반짝 켜짐</button>
+  <button data-act="wave">손 흔들기</button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { SVGLoader } from 'three/addons/loaders/SVGLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const gsap = window.gsap;
+const BG = '#F7FAFC';
+const BLUE = '#2F6BFF';
+
+/* ───────── 캐릭터 정의 ─────────
+   로고 원본(24×24)은 그대로 쓰고, 눈과 손만 덧붙인다.
+   line: 로고 좌표에서 바닥 선이 지나는 높이 (그 아래는 선 뒤로 숨음)
+   eye: 두 눈의 중심 [u, v], gap: 눈 사이 간격 (로고 좌표) */
+const CHARS = [
+  { id:'chatgpt',    name:'ChatGPT',    file:'openai.svg',       color:'#1A1A1A', ink:'#0D0D0D', glowColor:'#10A37F', bevel:.18, eye:[12, 12],   gap:4.8, idle:'sway' },
+  { id:'gemini',     name:'Gemini',     file:'googlegemini.svg', grad:['#4285F4', '#9B72CB'], ink:'#5B6FD6', bevel:.35, eye:[12, 11.4], gap:3.6, idle:'bounce' },
+  { id:'aiseen',     name:'Aiseen',     builtin:true,            color:BLUE,      ink:BLUE,      idle:'antenna' },
+  { id:'claude',     name:'Claude',     file:'claude.svg',       color:'#D97757', ink:'#A9502F', bevel:.16, eye:[12, 12.2], gap:5.0, idle:'nod' },
+  { id:'perplexity', name:'Perplexity', file:'perplexity.svg',   color:'#1FB8CD', ink:'#127C8A', bevel:.14, eye:[12, 11.6], gap:5.2, idle:'look' },
+];
+const LINE_V = 19;                 // 로고 좌표: 이 높이에 바닥 선
+const SLOT = [-2, -1, 0, 1, 2];
+const FRAC = SLOT.map(s => .5 + s * .185);   // 이름표 위치 (가로 비율)
+
+await Promise.all(CHARS.filter(c => c.file).map(async c => {
+  c.svg = await (await fetch('assets/logos/' + c.file)).text();
+  c.d = c.svg.match(/ d="([^"]+)"/)[1];
+}));
+
+/* 모든 동작은 이 상태값만 바꾼다. 2D와 3D는 매 프레임 같은 상태를 그린다. */
+const S = CHARS.map(() => ({ rise:0, open:1, look:0, tilt:0, happy:0, glow:0, hop:0, wave:0, spark:0 }));
+const PH = CHARS.map((_, i) => i * 1.37);    // 캐릭터마다 다른 박자
+
+document.querySelectorAll('[data-names]').forEach(box => {
+  CHARS.forEach((c, i) => {
+    const s = document.createElement('span');
+    s.textContent = c.name; s.style.left = (FRAC[i] * 100) + '%';
+    if (c.builtin) s.className = 'hero';
+    box.appendChild(s);
+  });
+});
+
+/* 대기 동작 (시간에 따라 계산) */
+function idle(c, i, t) {
+  const p = PH[i];
+  const o = { bob: Math.sin(t * 1.7 + p), sway: 0, nod: 0, look: 0, pulse: 0, antenna: 0 };
+  if (c.idle === 'sway')    o.sway = Math.sin(t * .8 + p);
+  if (c.idle === 'bounce')  { o.bob = Math.abs(Math.sin(t * 2.4 + p)) * 2 - .6; o.pulse = Math.sin(t * 4.8 + p); }
+  if (c.idle === 'nod')     o.nod = Math.sin(t * 2.2 + p);
+  if (c.idle === 'look')    { const k = Math.sin(t * .9 + p); o.look = Math.sign(k) * Math.min(1, Math.abs(k) * 2.2); }
+  if (c.idle === 'antenna') o.antenna = Math.sin(t * 3.1 + p);
+  return o;
+}
+
+/* ═════════════ 2D (SVG) ═════════════ */
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs = {}, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const LINE2 = 236, SC2 = 5, G2 = 1.22;           // 바닥 선 y, 로고 1단위 = 5px, 전체 확대
+const X2 = i => 500 + SLOT[i] * 185;
+
+const svg = el('svg', { viewBox:'0 0 1000 300', preserveAspectRatio:'xMidYMid meet' }, document.getElementById('stage2d'));
+const defs = el('defs', {}, svg);
+const clip = el('clipPath', { id:'clipLine', clipPathUnits:'userSpaceOnUse' }, defs);
+el('rect', { x:-50, y:-200, width:1100, height:LINE2 + 200 }, clip);
+const gg = el('linearGradient', { id:'gemGrad', x1:0, y1:1, x2:1, y2:0 }, defs);
+el('stop', { offset:'0', 'stop-color':'#4285F4' }, gg);
+el('stop', { offset:'1', 'stop-color':'#9B72CB' }, gg);
+const blur = el('filter', { id:'soft', x:'-50%', y:'-50%', width:'200%', height:'200%' }, defs);
+el('feGaussianBlur', { stdDeviation:'3' }, blur);
+
+const bodies = el('g', { 'clip-path':'url(#clipLine)' }, svg);
+el('line', { x1:0, x2:1000, y1:LINE2, y2:LINE2, stroke:BLUE, 'stroke-width':3.5, 'stroke-linecap':'round' }, svg);
+const handsLayer = el('g', { 'clip-path':'url(#clipLine)' }, svg);
+// 손은 선 위에 올라가 있어야 해서 선 높이까지 보이게 별도 클립
+handsLayer.setAttribute('clip-path', 'url(#clipHands)');
+const clipH = el('clipPath', { id:'clipHands', clipPathUnits:'userSpaceOnUse' }, defs);
+el('rect', { x:-50, y:-200, width:1100, height:LINE2 + 202 }, clipH);
+
+const PAW = 'M-17 0 C-17 -21 17 -21 17 0 Z';
+const PAW_F = 'M-5.5 -1.5 V-7.5 M5.5 -1.5 V-7.5';
+
+const V2 = CHARS.map((c, i) => {
+  const r = {};
+  r.root = el('g', {}, bodies);
+  const glowG = el('radialGradient', { id:'glow' + i }, defs);
+  const gc = c.glowColor || (c.grad ? c.grad[1] : c.color);
+  el('stop', { offset:'0', 'stop-color':gc, 'stop-opacity':.55 }, glowG);
+  el('stop', { offset:'1', 'stop-color':gc, 'stop-opacity':0 }, glowG);
+  r.glow = el('circle', { cx:0, cy:-45, r:85, fill:`url(#glow${i})`, opacity:0 }, r.root);
+  r.body = el('g', {}, r.root);
+  r.eyes = [];
+  if (c.builtin) {
+    // Aiseen 로봇: 로고를 기본 도형으로 다시 그림
+    r.antenna = el('g', {}, r.body);
+    el('rect', { x:-3.5, y:-96, width:7, height:24, rx:3.5, fill:BLUE }, r.antenna);
+    el('circle', { cx:0, cy:-100, r:9, fill:BLUE }, r.antenna);
+    el('path', { d:'M-64 40 V0 A64 76 0 0 1 64 0 V40 Z', fill:BLUE }, r.body);
+    el('path', { d:'M-45 40 V0 A45 54 0 0 1 45 0 V40 Z', fill:'#fff' }, r.body);
+    r.spark = [
+      el('path', { d:'M44 -82 L52 -96', stroke:'#C9D6F7', 'stroke-width':7, 'stroke-linecap':'round' }, r.body),
+      el('path', { d:'M58 -64 L73 -71', stroke:'#C9D6F7', 'stroke-width':7, 'stroke-linecap':'round' }, r.body),
+    ];
+    r.sparkGlow = el('g', { filter:'url(#soft)', opacity:0 }, r.body);
+    el('path', { d:'M44 -82 L52 -96 M58 -64 L73 -71', stroke:'#7FA6FF', 'stroke-width':12, 'stroke-linecap':'round' }, r.sparkGlow);
+    r.body.appendChild(r.spark[0]); r.body.appendChild(r.spark[1]);
+    for (const ex of [-17, 17]) {
+      const e = { cx:ex, cy:-28, w:11, h:20 };
+      e.open = el('rect', { fill:BLUE }, r.body);
+      e.happy = el('path', { d:`M${ex - 7} ${-24} Q${ex} ${-38} ${ex + 7} ${-24}`, stroke:BLUE, 'stroke-width':5, 'stroke-linecap':'round', fill:'none', opacity:0 }, r.body);
+      r.eyes.push(e);
+    }
+    r.handX = 50;
+  } else {
+    r.logo = el('g', { transform:`translate(${-12 * SC2} ${-LINE_V * SC2}) scale(${SC2})` }, r.body);
+    el('path', { d:c.d, fill: c.grad ? 'url(#gemGrad)' : c.color }, r.logo);
+    const [u, v] = c.eye;
+    for (const du of [-c.gap / 2, c.gap / 2]) {
+      const ex = (u + du - 12) * SC2, ey = (v - LINE_V) * SC2;
+      const e = { cx:ex, cy:ey, w:12, h:17 };
+      e.open = el('rect', { fill:'#fff', stroke:c.ink, 'stroke-width':2.5 }, r.body);
+      e.happy = el('g', { opacity:0 }, r.body);
+      const d = `M${ex - 7} ${ey + 4} Q${ex} ${ey - 10} ${ex + 7} ${ey + 4}`;
+      el('path', { d, stroke:c.ink, 'stroke-width':8, 'stroke-linecap':'round', fill:'none' }, e.happy);
+      el('path', { d, stroke:'#fff', 'stroke-width':3.5, 'stroke-linecap':'round', fill:'none' }, e.happy);
+      r.eyes.push(e);
+    }
+    r.handX = 44;
+  }
+  r.hands = [-1, 1].map(side => {
+    const g = el('g', {}, handsLayer);
+    el('path', { d:PAW, fill:'#fff', stroke:c.ink, 'stroke-width':4, 'stroke-linejoin':'round' }, g);
+    el('path', { d:PAW_F, stroke:c.ink, 'stroke-width':3, 'stroke-linecap':'round' }, g);
+    return g;
+  });
+  return r;
+});
+
+function render2D(t) {
+  CHARS.forEach((c, i) => {
+    const s = S[i], r = V2[i], o = idle(c, i, t);
+    const x = X2(i);
+    const y = LINE2 + (1 - s.rise) * 150 - s.hop * 26 + o.bob * 1.6;
+    const rot = s.tilt + o.sway * 5 + o.nod * 3;
+    const sc = 1 + o.pulse * .025 + s.hop * .04;
+    r.root.setAttribute('transform', `translate(${x} ${y})`);
+    r.body.setAttribute('transform', `rotate(${rot}) scale(${sc * G2})`);
+    r.glow.setAttribute('opacity', s.glow);
+    const look = (s.look + o.look) * 4;
+    for (const e of r.eyes) {
+      const h = Math.max(e.h * Math.max(s.open, .08) * (1 - s.happy), .01);
+      e.open.setAttribute('x', e.cx + look - e.w / 2);
+      e.open.setAttribute('y', e.cy - h / 2);
+      e.open.setAttribute('width', e.w);
+      e.open.setAttribute('height', h);
+      e.open.setAttribute('rx', Math.min(e.w / 2, h / 2));
+      e.open.setAttribute('opacity', 1 - s.happy);
+      e.happy.setAttribute('opacity', s.happy);
+    }
+    if (c.builtin) {
+      r.antenna.setAttribute('transform', `rotate(${o.antenna * 6} 0 -72)`);
+      const col = mix('#C9D6F7', BLUE, s.spark);
+      r.spark.forEach(p => p.setAttribute('stroke', col));
+      r.sparkGlow.setAttribute('opacity', s.spark * .9);
+    }
+    const hy = LINE2 + (1 - s.rise) * 60;
+    r.hands.forEach((g, k) => {
+      const side = k ? 1 : -1;
+      let extra = '';
+      if (side === 1 && s.wave > 0) extra = ` translate(0 ${-s.wave * 34}) rotate(${Math.sin(t * 14 + i) * 24 * s.wave})`;
+      g.setAttribute('transform', `translate(${x + side * r.handX * G2} ${hy})${extra} scale(${G2})`);
+    });
+  });
+}
+function mix(a, b, k) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const ch = sh => Math.round(((pa >> sh) & 255) * (1 - k) + ((pb >> sh) & 255) * k);
+  return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+}
+
+/* ═════════════ 3D (Three.js) ═════════════ */
+let render3D = () => {};
+try {
+  const canvas = document.getElementById('c3d');
+  const stage = document.getElementById('stage3d');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(BG);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), .04).texture;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xdfe6f2, .7));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+  sun.position.set(3, 7, 9);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, { left:-8, right:8, top:4, bottom:-2, near:1, far:30 });
+  sun.shadow.radius = 4;
+  scene.add(sun);
+
+  const camera = new THREE.PerspectiveCamera(26, 1, .1, 100);
+  const K = 1.7 / 24;              // 로고 1단위 → 3D 크기
+  const SLOT_W = 2.5;
+  const WALL_Z0 = .62, WALL_Z1 = 1.0, HAND_Z = .83;
+
+  // 선 앞의 벽(배경색과 동일) + 선반 위 그림자 + 파란 선
+  const wall = new THREE.Mesh(new THREE.BoxGeometry(60, 6, WALL_Z1 - WALL_Z0),
+    new THREE.MeshBasicMaterial({ color:BG }));
+  wall.position.set(0, -3, (WALL_Z0 + WALL_Z1) / 2);
+  scene.add(wall);
+  const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(60, WALL_Z1 - WALL_Z0 + .6),
+    new THREE.ShadowMaterial({ opacity:.12 }));
+  shadowPlane.rotation.x = -Math.PI / 2;
+  shadowPlane.position.set(0, .002, (WALL_Z0 + WALL_Z1) / 2 - .3);
+  shadowPlane.receiveShadow = true;
+  scene.add(shadowPlane);
+  const lineBar = new THREE.Mesh(new THREE.BoxGeometry(60, .035, .035), new THREE.MeshBasicMaterial({ color:BLUE }));
+  lineBar.position.set(0, 0, WALL_Z1);
+  scene.add(lineBar);
+
+  const plastic = (color, extra = {}) => new THREE.MeshPhysicalMaterial({
+    color, roughness:.42, metalness:0, clearcoat:.55, clearcoatRoughness:.35, envMapIntensity:.8, ...extra });
+  const white = plastic('#ffffff', { roughness:.35 });
+
+  const glowTex = (() => {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+    const g = cv.getContext('2d'); const rg = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    rg.addColorStop(0, 'rgba(255,255,255,1)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, 128, 128);
+    const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return t;
+  })();
+
+  function makeEyes(parent, positions, z, inkColor, eyeColor, outline) {
+    const eyes = [];
+    const pill = new THREE.CapsuleGeometry(.066, .085, 6, 16);
+    const arc = new THREE.TorusGeometry(.072, .025, 8, 24, Math.PI);
+    for (const [x, y] of positions) {
+      const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g);
+      const open = new THREE.Group(); g.add(open);
+      const eye = new THREE.Mesh(pill, plastic(eyeColor, { roughness:.3 }));
+      eye.scale.z = .55; open.add(eye);
+      if (outline) {
+        const ol = new THREE.Mesh(pill, new THREE.MeshBasicMaterial({ color:inkColor }));
+        ol.scale.set(1.3, 1.18, .4); ol.position.z = -.012; open.add(ol);
+      }
+      const happy = new THREE.Mesh(arc, plastic(outline ? '#ffffff' : eyeColor));
+      happy.position.y = -.025; happy.scale.z = .6; happy.visible = false; g.add(happy);
+      eyes.push({ g, open, happy });
+    }
+    return eyes;
+  }
+
+  const V3 = CHARS.map((c, i) => {
+    const r = {};
+    r.root = new THREE.Group();
+    r.root.position.x = SLOT[i] * SLOT_W;
+    scene.add(r.root);
+    r.body = new THREE.Group(); r.root.add(r.body);
+    r.mats = [];
+    const glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, color:c.glowColor || (c.grad ? c.grad[1] : c.color), transparent:true, opacity:0, depthWrite:false }));
+    glowSprite.scale.set(2.6, 2.6, 1); glowSprite.position.set(0, .65, -.5);
+    r.root.add(glowSprite); r.glow = glowSprite;
+
+    if (c.builtin) {
+      r.z = 0;
+      const blue = plastic(BLUE); r.mats.push(blue);
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2), blue);
+      dome.scale.set(.9, 1.07, .7);
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 2, 64, 1, true), blue);
+      base.scale.set(.9, 1, .7); base.position.y = -1;
+      const face = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2), white);
+      face.scale.set(.64, .76, .2); face.position.z = .56;
+      const ant = new THREE.Group(); ant.position.y = 1.0;
+      const stick = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .32, 16), blue); stick.position.y = .16;
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(.12, 32, 16), blue); ball.position.y = .38;
+      ant.add(stick, ball);
+      r.antenna = ant;
+      r.sparkMat = plastic('#C9D6F7', { emissive:new THREE.Color(BLUE), emissiveIntensity:0 });
+      r.spark = [[.68, 1.24, .95], [.92, .98, .42]].map(([x, y, a]) => {
+        const m = new THREE.Mesh(new THREE.CapsuleGeometry(.05, .14, 6, 12), r.sparkMat);
+        m.position.set(x, y, .25); m.rotation.z = -a; return m;
+      });
+      r.body.add(dome, base, face, ant, ...r.spark);
+      [dome, base, ball, stick].forEach(m => m.castShadow = true);
+      r.eyes = makeEyes(r.body, [[-.24, .42], [.24, .42]], .76, BLUE, BLUE, false);
+      r.handX = .74;
+    } else {
+      r.z = .4;
+      const data = new SVGLoader().parse(c.svg);
+      const shapes = data.paths.flatMap(p => SVGLoader.createShapes(p));
+      const geo = new THREE.ExtrudeGeometry(shapes, { depth:2, bevelEnabled:true, bevelThickness:.5, bevelSize:c.bevel, bevelSegments:5, curveSegments:28 });
+      geo.translate(-12, -LINE_V, -1);
+      geo.scale(K, -K, -K);              // y·z 동시 반전 = 회전과 같아서 면 방향 유지
+      geo.computeVertexNormals();
+      let mat;
+      if (c.grad) {
+        const pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
+        const a = new THREE.Color(c.grad[0]), b = new THREE.Color(c.grad[1]), tmp = new THREE.Color();
+        for (let k = 0; k < pos.count; k++) {
+          const tt = THREE.MathUtils.clamp(((pos.getX(k) + .85) / 1.7 + (pos.getY(k) + .35) / 1.7) / 2, 0, 1);
+          tmp.copy(a).lerp(b, tt); col.set([tmp.r, tmp.g, tmp.b], k * 3);
+        }
+        geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+        mat = plastic('#ffffff', { vertexColors:true, emissive:new THREE.Color(c.grad[1]) });
+      } else {
+        mat = plastic(c.color, { emissive:new THREE.Color(c.glowColor || c.color) });
+      }
+      mat.emissiveIntensity = 0;
+      r.mats.push(mat);
+      const mesh = new THREE.Mesh(geo, mat); mesh.castShadow = true;
+      r.body.add(mesh);
+      const [u, v] = c.eye;
+      const eyePos = [-c.gap / 2, c.gap / 2].map(du => [(u + du - 12) * K, -(v - LINE_V) * K]);
+      r.eyes = makeEyes(r.body, eyePos, 1.5 * K + .03, c.ink, '#ffffff', true);
+      r.handX = .62;
+    }
+    r.root.position.z = r.z;
+    r.hands = [-1, 1].map(side => {
+      const h = new THREE.Group();
+      const m = new THREE.Mesh(new THREE.SphereGeometry(.16, 32, 16), white);
+      m.scale.set(1.15, .72, .9); m.position.y = .115; m.castShadow = true;
+      // 로고처럼 테두리(뒷면 외곽선) + 손가락 두 줄
+      const inkMat = new THREE.MeshBasicMaterial({ color:c.ink, side:THREE.BackSide });
+      const ol = new THREE.Mesh(m.geometry, inkMat);
+      ol.scale.set(1.15 * 1.12, .72 * 1.16, .9 * 1.1); ol.position.y = .115;
+      const fingerGeo = new THREE.CapsuleGeometry(.013, .05, 4, 8);
+      const fingerMat = new THREE.MeshBasicMaterial({ color:c.ink });
+      const fingers = [-.065, .065].map(fx => { const f = new THREE.Mesh(fingerGeo, fingerMat); f.position.set(fx, .055, .13); return f; });
+      h.add(m, ol, ...fingers);
+      h.position.set(SLOT[i] * SLOT_W + side * r.handX, 0, HAND_Z);
+      scene.add(h);
+      return h;
+    });
+    return r;
+  });
+
+  // 마우스 따라 보기 (터치 기기는 끔)
+  const mouse = { x:0, y:0, tx:0, ty:0 };
+  if (matchMedia('(hover: hover)').matches) {
+    addEventListener('pointermove', e => { mouse.tx = e.clientX / innerWidth * 2 - 1; mouse.ty = e.clientY / innerHeight * 2 - 1; });
+  }
+
+  function fit() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    const half = THREE.MathUtils.degToRad(camera.fov / 2);
+    const d = Math.max(6.6 / (Math.tan(half) * camera.aspect), 1.45 / Math.tan(half));
+    const ty = Math.max(.72, d * Math.tan(half) * .5);   // 좁은 화면에선 선을 아래쪽으로
+    camera.position.set(0, ty + .13 + d * .075, d);
+    camera.lookAt(0, ty, 0);
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(fit).observe(stage); fit();
+
+  let visible = true;
+  new IntersectionObserver(([e]) => visible = e.isIntersecting).observe(stage);
+
+  render3D = t => {
+    if (!visible) return;
+    mouse.x += (mouse.tx - mouse.x) * .08; mouse.y += (mouse.ty - mouse.y) * .08;
+    CHARS.forEach((c, i) => {
+      const s = S[i], r = V3[i], o = idle(c, i, t);
+      r.body.position.y = -(1 - s.rise) * 1.8 + s.hop * .36 + o.bob * .022;
+      r.body.rotation.z = THREE.MathUtils.degToRad(-(s.tilt + o.nod * 0));
+      r.body.rotation.y = o.sway * .38 + (s.look + o.look) * .3 + mouse.x * .35;
+      r.body.rotation.x = o.nod * .1 + mouse.y * .14;
+      const sc = 1 + o.pulse * .025 + s.hop * .04; r.body.scale.setScalar(sc);
+      r.glow.material.opacity = s.glow * .75;
+      r.mats.forEach(m => { if (m.emissive) m.emissiveIntensity = s.glow * .45; });
+      const look = (s.look + o.look) * .03;
+      r.eyes.forEach(e => {
+        e.open.scale.y = Math.max(s.open, .08) * (1 - s.happy) || .001;
+        e.open.visible = s.happy < .98;
+        e.open.position.x = look;
+        e.happy.visible = s.happy > .02; e.happy.scale.set(s.happy, s.happy, .6);
+      });
+      if (r.antenna) {
+        r.antenna.rotation.z = o.antenna * .1;
+        r.sparkMat.color.set('#C9D6F7').lerp(new THREE.Color(BLUE), s.spark);
+        r.sparkMat.emissiveIntensity = s.spark * .9;
+      }
+      r.hands.forEach((h, k) => {
+        h.position.y = -(1 - s.rise) * .5;
+        if (k === 1) { h.position.y += s.wave * .42; h.rotation.z = Math.sin(t * 14 + i) * .45 * s.wave; }
+        else h.rotation.z = 0;
+      });
+    });
+    renderer.render(scene, camera);
+  };
+} catch (err) {
+  console.error(err);
+  document.getElementById('stage3d').insertAdjacentHTML('beforeend', '<div class="err">이 기기에서는 3D를 표시할 수 없어요.</div>');
+}
+
+/* ═════════════ 동작 ═════════════ */
+const t0 = performance.now();
+gsap.ticker.add(() => {
+  const t = (performance.now() - t0) / 1000;
+  render2D(t);
+  render3D(t);
+});
+
+const order = [2, 1, 3, 0, 4];   // 가운데(Aiseen)부터 바깥으로
+const ACTIONS = {
+  peek() {
+    gsap.killTweensOf(S);
+    S.forEach(s => Object.assign(s, { rise:0, open:1, look:0, tilt:0, happy:0, glow:0, hop:0, wave:0, spark:0 }));
+    order.forEach((i, k) => {
+      gsap.to(S[i], { rise:1, duration:.95, ease:'back.out(1.6)', delay:.15 + k * .14 });
+      blinkOne(i, 1.05 + k * .14);
+    });
+  },
+  blink() { order.forEach((i, k) => blinkOne(i, k * .07)); },
+  tilt() {
+    CHARS.forEach((c, i) => {
+      const dir = i % 2 ? 1 : -1;
+      gsap.timeline()
+        .to(S[i], { tilt:14 * dir, look:dir, duration:.45, ease:'back.out(2)', delay:i * .06 })
+        .to(S[i], { tilt:0, look:0, duration:.55, ease:'power2.inOut' }, '+=1');
+    });
+  },
+  lightUp() {
+    [0, 1, 3, 4, 2].forEach((i, k) => {
+      const at = k * .3;
+      gsap.timeline({ delay:at })
+        .to(S[i], { hop:1, duration:.2, ease:'power2.out' })
+        .to(S[i], { hop:0, duration:.45, ease:'bounce.out' })
+        .to(S[i], { happy:1, glow:1, duration:.22 }, 0)
+        .to(S[i], { glow:0, duration:.9 }, .9)
+        .to(S[i], { happy:0, duration:.25 }, 2.4);
+      if (CHARS[i].builtin) {
+        // 안테나 반짝이: 전원 켜지듯 깜빡이다 켜짐
+        gsap.timeline({ delay:at + .1 })
+          .set(S[i], { spark:.9 }).set(S[i], { spark:.1 }, .07).set(S[i], { spark:1 }, .14)
+          .set(S[i], { spark:.3 }, .22).to(S[i], { spark:1, duration:.15 }, .3);
+      }
+    });
+  },
+  wave() {
+    order.forEach((i, k) => gsap.timeline({ delay:k * .1 })
+      .to(S[i], { wave:1, duration:.3, ease:'back.out(2)' })
+      .to(S[i], { wave:0, duration:.35, ease:'power2.in' }, '+=1.6'));
+  },
+};
+function blinkOne(i, delay = 0) {
+  gsap.timeline({ delay })
+    .to(S[i], { open:.05, duration:.07, ease:'power1.in' })
+    .to(S[i], { open:1, duration:.11, ease:'power1.out' });
+}
+// 대기 중 랜덤 깜빡임
+CHARS.forEach((_, i) => {
+  const loop = () => setTimeout(() => { if (S[i].happy < .01 && S[i].rise > .99) blinkOne(i); loop(); }, 2200 + Math.random() * 2800);
+  loop();
+});
+
+document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => ACTIONS[b.dataset.act]()));
+window.__aiseen = { S, ACTIONS, draw:t => { render2D(t); render3D(t); } };   // 테스트용
+ACTIONS.peek();
+</script>
+</body>
+</html>
