@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>폰트 후보 비교</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Unbounded:wght@600;800&family=Syne:wght@700;800&family=Gothic+A1:wght@400;800;900&family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;700&family=Archivo:wdth,wght@125,800;125,900&family=Orbit&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<style>
+  :root { --bg: #0e0d0f; --ink: #f3eee6; --muted: #8a8590; --gold: #ffc21a; --red: #ff2a2a; --line: #26232a; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: Pretendard, system-ui, sans-serif; padding: 40px 16px 80px; }
+  header { max-width: 1280px; margin: 0 auto 28px; }
+  header h1 { font-size: 28px; font-weight: 800; }
+  header p { color: var(--muted); margin-top: 6px; font-size: 14px; }
+  .grid { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card { position: relative; aspect-ratio: 16 / 10; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #000 url("frames/point/0070.webp") center 30% / cover; }
+  .card::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(14,13,15,.92) 0%, rgba(14,13,15,.55) 55%, rgba(14,13,15,.15) 100%); }
+  .inner { position: relative; height: 100%; padding: clamp(18px, 3vw, 34px); display: flex; flex-direction: column; justify-content: space-between; }
+  .tag { display: inline-flex; gap: 8px; align-items: center; font: 600 11px/1 Pretendard, sans-serif; letter-spacing: .08em; color: #111; background: var(--gold); padding: 6px 10px; border-radius: 99px; align-self: flex-start; }
+  .tag.cur { background: #3a3540; color: var(--ink); }
+  .k { font-size: 11px; letter-spacing: .3em; color: var(--gold); margin-bottom: 10px; }
+  .big { font-size: clamp(44px, 6vw, 92px); line-height: .92; }
+  .big b { color: var(--gold); font-weight: inherit; }
+  .ko { font-size: clamp(20px, 2.4vw, 34px); line-height: 1.2; margin-top: 16px; }
+  .en { font-size: clamp(18px, 2vw, 28px); margin-top: 8px; }
+  .en .red { color: var(--red); }
+  .body { font-size: 13px; color: #bdb7c2; margin-top: 10px; line-height: 1.6; }
+  .note { font: 12px/1.5 Pretendard, sans-serif; color: var(--muted); margin-top: 8px; }
+
+  /* A. current */
+  .a .big { font-family: Anton, sans-serif; }
+  .a .ko, .a .en { font-family: Pretendard, sans-serif; font-weight: 800; }
+  .a .body { font-family: Pretendard, sans-serif; }
+  /* B. Unbounded */
+  .b .big { font-family: Unbounded, sans-serif; font-weight: 800; letter-spacing: -.02em; font-size: clamp(36px, 5vw, 76px); }
+  .b .ko { font-family: Pretendard, sans-serif; font-weight: 800; letter-spacing: -.03em; }
+  .b .en { font-family: Unbounded, sans-serif; font-weight: 600; }
+  /* C. Syne + Gothic A1 */
+  .c .big { font-family: Syne, sans-serif; font-weight: 800; letter-spacing: -.03em; }
+  .c .ko { font-family: "Gothic A1", sans-serif; font-weight: 900; letter-spacing: -.04em; }
+  .c .en { font-family: Syne, sans-serif; font-weight: 700; }
+  .c .body { font-family: "Gothic A1", sans-serif; }
+  /* D. Space Grotesk + Plex KR */
+  .d .big { font-family: "Space Grotesk", sans-serif; font-weight: 700; letter-spacing: -.04em; }
+  .d .ko { font-family: "IBM Plex Sans KR", sans-serif; font-weight: 700; letter-spacing: -.02em; }
+  .d .en { font-family: "Space Grotesk", sans-serif; font-weight: 500; }
+  .d .body { font-family: "IBM Plex Sans KR", sans-serif; }
+  /* E. Archivo Expanded + Pretendard Black */
+  .e .big { font-family: Archivo, sans-serif; font-weight: 900; font-stretch: 125%; letter-spacing: -.02em; text-transform: uppercase; font-size: clamp(36px, 5vw, 78px); }
+  .e .ko { font-family: Pretendard, sans-serif; font-weight: 900; letter-spacing: -.04em; }
+  .e .en { font-family: Archivo, sans-serif; font-weight: 800; font-stretch: 125%; text-transform: uppercase; font-size: clamp(14px, 1.5vw, 20px); letter-spacing: .02em; }
+  /* F. Orbit + Space Mono */
+  .f .big { font-family: "Space Mono", monospace; font-weight: 700; letter-spacing: -.04em; font-size: clamp(40px, 5.4vw, 84px); }
+  .f .ko { font-family: Orbit, sans-serif; }
+  .f .en { font-family: "Space Mono", monospace; }
+  .f .body { font-family: "Space Mono", monospace; font-size: 12px; }
+
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>폰트 후보 6종</h1>
+  <p>실제 사이트 문구와 캐릭터 화면 위에 그대로 적용한 비교예요. 숫자로 골라 주세요.</p>
+</header>
+
+<div class="grid">
+  <section class="card a"><div class="inner">
+    <span class="tag cur">A · 지금 사이트</span>
+    <div>
+      <div class="k">KIMITE STUDIO</div>
+      <div class="big">EYES <b>ON</b></div>
+      <div class="ko">머릿속 장면을 화면 위로.</div>
+      <div class="en">Your story, <span class="red">next.</span></div>
+      <div class="body">광고 · 뮤직비디오 · 영상 선물 · 레슨 · 컨설팅</div>
+      <div class="note">Anton + Pretendard — 길쭉하고 굵은 포스터 느낌</div>
+    </div>
+  </div></section>
+
+  <section class="card b"><div class="inner">
+    <span class="tag">B · 와이드 모던</span>
+    <div>
+      <div class="k">KIMITE STUDIO</div>
+      <div class="big">EYES <b>ON</b></div>
+      <div class="ko">머릿속 장면을 화면 위로.</div>
+      <div class="en">Your story, <span class="red">next.</span></div>
+      <div class="body">광고 · 뮤직비디오 · 영상 선물 · 레슨 · 컨설팅</div>
+      <div class="note">Unbounded + Pretendard — 넓고 둥근, 요즘 테크·패션 브랜드 느낌</div>
+    </div>
+  </div></section>
+
+  <section class="card c"><div class="inner">
+    <span class="tag">C · 아트 디렉션</span>
+    <div>
+      <div class="k">KIMITE STUDIO</div>
+      <div class="big">EYES <b>ON</b></div>
+      <div class="ko">머릿속 장면을 화면 위로.</div>
+      <div class="en">Your story, <span class="red">next.</span></div>
+      <div class="body">광고 · 뮤직비디오 · 영상 선물 · 레슨 · 컨설팅</div>
+      <div class="note">Syne + Gothic A1 — 개성 있는 곡선, 크리에이티브 스튜디오 느낌</div>
+    </div>
+  </div></section>
+
+  <section class="card d"><div class="inner">
+    <span class="tag">D · 클린 테크</span>
+    <div>
+      <div class="k">KIMITE STUDIO</div>
+      <div class="big">EYES <b>ON</b></div>
+      <div class="ko">머릿속 장면을 화면 위로.</div>
+      <div class="en">Your story, <span class="red">next.</span></div>
+      <div class="body">광고 · 뮤직비디오 · 영상 선물 · 레슨 · 컨설팅</div>
+      <div class="note">Space Grotesk + IBM Plex Sans KR — 깔끔한 AI·테크 느낌</div>
+    </div>
+  </div></section>
+
+  <section class="card e"><div class="inner">
+    <span class="tag">E · 익스팬디드 스트릿</span>
+    <div>
+      <div class="k">KIMITE STUDIO</div>
+      <div class="big">EYES <b>ON</b></div>
+      <div class="ko">머릿속 장면을 화면 위로.</div>
+      <div class="en">Your story, <span class="red">next.</span></div>
+      <div class="body">광고 · 뮤직비디오 · 영상 선물 · 레슨 · 컨설팅</div>
+      <div class="note">Archivo Expanded + Pretendard Black — 옆으로 넓고 묵직한 스트릿 패션 느낌</div>
+    </div>
+  </div></section>
+
+  <section class="card f"><div class="inner">
+    <span class="tag">F · 로봇 터미널</span>
+    <div>
+      <div class="k">KIMITE STUDIO</div>
+      <div class="big">EYES <b>ON</b></div>
+      <div class="ko">머릿속 장면을 화면 위로.</div>
+      <div class="en">Your story, <span class="red">next.</span></div>
+      <div class="body">광고 · 뮤직비디오 · 영상 선물 · 레슨 · 컨설팅</div>
+      <div class="note">Space Mono + Orbit — 코드·로봇 콘셉트를 살린 고정폭 느낌</div>
+    </div>
+  </div></section>
+</div>
+</body>
+</html>
