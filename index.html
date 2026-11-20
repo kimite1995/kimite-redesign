@@ -219,7 +219,8 @@
   const SEGMENTS = [
     { clip: 'wake',  a: 0.00, b: 0.30 },   // wakes up, taps temple (robot eye dark)
     { eye: true,     a: 0.30, b: 0.42 },   // hold last frame while the eye powers on
-    { clip: 'point', a: 0.42, b: 0.71, crossfade: 0.06 },   // points at the viewer
+    // points at the viewer; cut at frame 119 (the AI's last two frames glitch wider)
+    { clip: 'point', a: 0.42, b: 0.71, crossfade: 0.06, lastFrame: 119 },
     // snaps his fingers (spark at frame 69); clip trimmed at frame 95 so it doesn't linger after the snap
     { clip: 'snap',  a: 0.71, b: 1.00, crossfade: 0.06, lastFrame: 95, snapAt: 68 / 94 },
   ];
@@ -230,18 +231,22 @@
   // Lock the camera: the video AI starts each chained clip slightly zoomed/shifted vs. the previous
   // clip's last frame (align.json, made by .tools/align_clips.py). Chain those corrections and keep
   // each clip's correction for the whole clip, so the character never moves on screen.
-  // A transform maps clip coords onto the first clip: p' = s * (p - centre) + centre + d
+  // A transform maps clip coords onto the first clip, per axis: p' = s * (p - centre) + centre + d
+  // (horizontal and vertical scale differ: the AI also squashes/stretches clips slightly)
   const ALIGN = await fetch('frames/align.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
   const LOCK = {};
-  let acc = { s: 1, dx: 0, dy: 0 };
+  let acc = { sx: 1, sy: 1, dx: 0, dy: 0 };
   for (const c of clips) {
     const a = ALIGN[c];
-    if (a) acc = { s: acc.s * a.s, dx: acc.s * a.dx + acc.dx, dy: acc.s * a.dy + acc.dy };
+    if (a) {
+      const ax = a.sx ?? a.s, ay = a.sy ?? a.s;
+      acc = { sx: acc.sx * ax, sy: acc.sy * ay, dx: acc.sx * a.dx + acc.dx, dy: acc.sy * a.dy + acc.dy };
+    }
     LOCK[c] = acc;
   }
   function place(rect, t) {
     if (!t) return rect;
-    const w = rect.w * t.s, h = rect.h * t.s;
+    const w = rect.w * t.sx, h = rect.h * t.sy;
     return { x: rect.x + rect.w / 2 - w / 2 + t.dx * rect.w, y: rect.y + rect.h / 2 - h / 2 + t.dy * rect.h, w, h };
   }
   const frames = {};
@@ -361,8 +366,8 @@
     const q = Math.min(1, Math.max(0, (p - seg.a) / (seg.b - seg.a)));
     state.shake = 0; state.under = null; snapEl.style.opacity = 0;
     if (seg.crossfade && q < seg.crossfade) {
-      const prev = SEGMENTS.slice(0, SEGMENTS.indexOf(seg)).reverse().find(s => s.clip).clip;
-      const last = frames[prev] && frames[prev][manifest[prev] - 1];
+      const prevSeg = SEGMENTS.slice(0, SEGMENTS.indexOf(seg)).reverse().find(s => s.clip), prev = prevSeg.clip;
+      const last = frames[prev] && frames[prev][(prevSeg.lastFrame || manifest[prev]) - 1];
       if (last && last.naturalWidth) { state.under = last; state.underClip = prev; state.alpha = q / seg.crossfade; }
     }
     if (seg.eye) {
