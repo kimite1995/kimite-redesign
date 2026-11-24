@@ -102,6 +102,37 @@
   .work .t { font-size: 12px; color: var(--gold); font-weight: 700; letter-spacing: .1em; }
   .work h4 { font-size: 20px; margin: 8px 0 6px; }
   .work p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  a.work { color: inherit; text-decoration: none; }
+  .work img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; transition: transform .8s cubic-bezier(.2,.8,.2,1), filter .5s; filter: saturate(.9) brightness(.85); }
+  .work::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to top, rgba(14,13,15,.92) 0%, rgba(14,13,15,.55) 35%, rgba(14,13,15,0) 65%); }
+  .work::before { z-index: 2; }
+  .work > .t, .work > h4, .work > p { position: relative; z-index: 2; }
+  .work:hover img { transform: scale(1.05); filter: saturate(1) brightness(.95); }
+  .all-works { display: inline-flex; gap: 10px; margin-top: 28px; color: var(--ink); text-decoration: none; font-weight: 700; font-size: 15px; border-bottom: 1px solid #3a3540; padding-bottom: 4px; }
+  .all-works span { color: var(--gold); transition: transform .3s; }
+  .all-works:hover span { transform: translateX(6px); }
+
+  /* about */
+  .about-grid { display: grid; grid-template-columns: minmax(280px, 1fr) 1.15fr; gap: clamp(32px, 5vw, 80px); align-items: center; }
+  .about-photo { position: relative; margin: 0; border-radius: 20px; overflow: hidden; border: 1px solid var(--line); aspect-ratio: 1 / 1; background: #19171b; }
+  .about-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .about-photo figcaption { position: absolute; left: 18px; top: 14px; font: 600 11px/1.8 ui-monospace, Consolas, monospace; letter-spacing: .12em; color: var(--muted); }
+  .about-photo figcaption b { color: var(--red); font-weight: 600; text-shadow: 0 0 10px rgba(255,42,42,.7); }
+  .about-copy h3 { margin: 14px 0 26px; font-family: Unbounded, sans-serif; font-size: clamp(40px, 6vw, 96px); letter-spacing: -.04em; line-height: 1; }
+  .about-copy h3 b { color: var(--gold); }
+  .about-lead { font-size: clamp(20px, 2vw, 28px); font-weight: 800; line-height: 1.4; letter-spacing: -.02em; }
+  .about-body { margin-top: 18px; color: var(--muted); font-size: 15px; line-height: 1.8; max-width: 560px; }
+  .about-motto { margin-top: 22px; font-size: 15px; font-weight: 700; color: #cfc9d3; }
+  .about-motto b { color: var(--gold); }
+  .stats { display: flex; gap: clamp(24px, 4vw, 56px); margin-top: 36px; padding: 26px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .stats > div { display: flex; flex-wrap: wrap; align-items: baseline; }
+  .stats .num { font-family: Unbounded, sans-serif; font-weight: 800; font-size: clamp(32px, 3.6vw, 52px); letter-spacing: -.03em; line-height: 1; }
+  .stats i { font-style: normal; font-family: Unbounded, sans-serif; font-weight: 800; font-size: clamp(22px, 2.4vw, 34px); color: var(--gold); margin-left: 2px; }
+  .stats small { flex-basis: 100%; margin-top: 8px; color: var(--muted); font-size: 13px; }
+  .toolkit { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; align-items: center; }
+  .toolkit span { border: 1px solid #3a3540; border-radius: 99px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: #cfc9d3; }
+  .toolkit .tk-label { border: 0; padding: 0 8px 0 0; font-family: Unbounded, sans-serif; font-size: 11px; letter-spacing: .15em; color: var(--gold); }
+
   .services { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
   .svc { padding: 34px 28px 34px 0; border-bottom: 1px solid var(--line); }
   .svc .n { font-family: Unbounded, sans-serif; font-weight: 800; color: #3a3540; font-size: 32px; transition: color .3s; }
@@ -121,6 +152,10 @@
     .works { grid-template-columns: 1fr 1fr; }
     .work:first-child { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 10; }
     .services { grid-template-columns: 1fr; }
+    .about-grid { grid-template-columns: 1fr; }
+    .about-photo { max-width: 520px; }
+    .about-photo figcaption { display: none; }
+    .stats { gap: 22px; }
     .scroll-hint { display: none; }
   }
 </style>
@@ -176,15 +211,16 @@
 </div>
 
 <section class="block" id="works">
-  <div class="eyebrow reveal">RECENT WORKS</div>
-  <h3 class="reveal">최근 화면 위로<br>꺼낸 장면들.</h3>
+  <div class="eyebrow reveal">WORKS</div>
+  <h3 class="reveal">최근 작업물.</h3>
   <div class="works">
-    <div class="work reveal"><div class="t">숏폼</div><h4>AI를 이용해 화면 속 세상에 들어가다</h4><p>뮤직비디오부터 영화, 애니메이션까지. AI로 내 얼굴을 다양한 이야기의 주인공으로.</p></div>
-    <div class="work reveal"><div class="t">AI 뮤직비디오</div><h4>AI COVER 뮤직비디오</h4><p>기존 음원 편곡과 영상화를 AI로.</p></div>
-    <div class="work reveal"><div class="t">AI 뮤직비디오</div><h4>GOLDSKINZ 뮤직비디오</h4><p>기존 음원을 생성형 AI 비주얼로 재해석.</p></div>
-    <div class="work reveal"><div class="t">브랜드 필름</div><h4>에어베이퍼 홈페이지 루프 영상</h4><p>제품 속 캐릭터가 브랜드의 첫인상으로.</p></div>
-    <div class="work reveal"><div class="t">영상 상품</div><h4>소중한 사람을 위한 영상 선물</h4><p>가족의 기억을 따뜻한 영상으로.</p></div>
+    <a class="work reveal" href="https://kimite.kr/works/ai-screen-world" target="_blank" rel="noopener"><img src="works/ai-screen-world.webp" alt="" loading="lazy"><div class="t">숏폼</div><h4>AI를 이용해 화면 속 세상에 들어가다</h4><p>뮤직비디오부터 영화, 애니메이션까지. AI로 내 얼굴을 다양한 이야기의 주인공으로.</p></a>
+    <a class="work reveal" href="https://kimite.kr/works/ai-cover-music-video" target="_blank" rel="noopener"><img src="works/ai-cover.webp" alt="" loading="lazy"><div class="t">AI 뮤직비디오</div><h4>AI COVER 뮤직비디오</h4><p>기존 음원 편곡과 영상화를 AI로.</p></a>
+    <a class="work reveal" href="https://kimite.kr/works/goldskinz-music-video" target="_blank" rel="noopener"><img src="works/goldskinz.webp" alt="" loading="lazy"><div class="t">AI 뮤직비디오</div><h4>GOLDSKINZ 뮤직비디오</h4><p>기존 음원을 생성형 AI 비주얼로 재해석.</p></a>
+    <a class="work reveal" href="https://kimite.kr/works/airvaper-loop" target="_blank" rel="noopener"><img src="works/airvaper.webp" alt="" loading="lazy"><div class="t">브랜드 필름</div><h4>에어베이퍼 홈페이지 루프 영상</h4><p>제품 속 캐릭터가 브랜드의 첫인상으로.</p></a>
+    <a class="work reveal" href="https://kimite.kr/works/video-gift" target="_blank" rel="noopener"><img src="works/video-gift.webp" alt="" loading="lazy"><div class="t">영상 상품</div><h4>소중한 사람을 위한 영상 선물</h4><p>가족의 기억을 따뜻한 영상으로.</p></a>
   </div>
+  <a class="all-works reveal" href="https://kimite.kr/#all-works" target="_blank" rel="noopener">전체 작업 보기 <span>→</span></a>
 </section>
 
 <section class="block" id="services">
@@ -200,13 +236,38 @@
   </div>
 </section>
 
+<section class="block about" id="about">
+  <div class="about-grid">
+    <figure class="about-photo reveal">
+      <img src="about/kimite.webp" alt="KIMITE 캐릭터" loading="lazy">
+      <figcaption>UNIT · KIMITE-01<br>OPERATOR · <b>ONLINE</b></figcaption>
+    </figure>
+    <div class="about-copy">
+      <div class="eyebrow reveal">ABOUT</div>
+      <h3 class="reveal disp">I'm KIMITE<b>.</b></h3>
+      <p class="about-lead reveal">AI는 손을 빠르게 할 뿐.<br>장면을 고르는 건 사람입니다.</p>
+      <p class="about-body reveal">Grok, GPT, Seedance 같은 최신 생성형 AI로 뽑고, 편집과 후반 작업으로 직접 다듬습니다. 브랜드든 아티스트든 한 사람의 기억이든, 한 장면 한 장면에 감정이 남도록.</p>
+      <p class="about-motto reveal">기술보다 <b>이야기</b>. 속도보다 <b>감정</b>.</p>
+      <div class="stats reveal">
+        <div><span class="num" data-to="50">0</span><i>+</i><small>AI 영상 제작</small></div>
+        <div><span class="num" data-to="10">0</span><i>+</i><small>협업 브랜드</small></div>
+        <div><span class="num" data-to="100">0</span><i>%</i><small>클라이언트 만족</small></div>
+      </div>
+      <div class="toolkit reveal">
+        <span class="tk-label">TOOLKIT</span>
+        <span>CapCut</span><span>Nano Banana 2</span><span>Gemini</span><span>GPT</span><span>Grok</span><span>Seedance</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="block contact" id="contact">
   <div class="eyebrow reveal">CONTACT</div>
   <div class="big reveal">YOUR STORY,<br><span>NEXT.</span></div>
   <a class="btn reveal" href="https://kimite.kr/#contact">이야기 들려주기 →</a>
 </section>
 
-<footer id="about"><span>© KIMITE STUDIO</span><span>리디자인 시안</span></footer>
+<footer><span>© KIMITE STUDIO</span><span>리디자인 시안</span></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
@@ -568,6 +629,13 @@
   // section reveals
   gsap.utils.toArray('.reveal').forEach(el => {
     gsap.to(el, { opacity: 1, y: 0, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%' } });
+  });
+
+  // about 숫자 카운트업
+  document.querySelectorAll('.stats .num').forEach(el => {
+    const o = { v: 0 };
+    gsap.to(o, { v: +el.dataset.to, duration: 1.6, ease: 'power2.out', onUpdate: () => el.textContent = Math.round(o.v),
+      scrollTrigger: { trigger: el, start: 'top 85%', once: true } });
   });
 
   addEventListener('resize', resize);
