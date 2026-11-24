@@ -94,35 +94,66 @@
   section.block { position: relative; z-index: 2; background: var(--bg); padding: clamp(80px, 12vw, 160px) clamp(16px, 6vw, 96px); }
   .eyebrow { font-family: Unbounded, sans-serif; font-weight: 600; font-size: 12px; letter-spacing: .15em; color: var(--gold); }
   .block h3 { font-size: clamp(30px, 4.4vw, 64px); font-weight: 800; letter-spacing: -.02em; margin: 14px 0 48px; line-height: 1.15; }
-  html, body { overflow-x: clip; }   /* 날아오는 파편이 위(캡슐 쪽)로는 넘쳐 보이되, 가로 스크롤은 생기지 않게 */
-  .works { perspective: 1600px; display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; }
-  .work { position: relative; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; background: #19171b; border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: flex-end; padding: 22px; transition: transform .5s cubic-bezier(.2,.8,.2,1), border-color .3s; }
-  .work:first-child { grid-row: span 2; aspect-ratio: auto; }
-  .work:hover { transform: translateY(-6px); border-color: var(--gold); }
-  .work::before { content: "▶"; position: absolute; top: 20px; right: 22px; color: var(--gold); font-size: 14px; }
-  .work .t { font-size: 12px; color: var(--gold); font-weight: 700; letter-spacing: .1em; }
-  .work h4 { font-size: 20px; margin: 8px 0 6px; }
+  /* ---------- WORKS ---------- */
+  .works-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
+  .block .works-head h3 { margin-bottom: 0; }
+  .view-toggle { display: flex; gap: 4px; padding: 4px; border: 1px solid #3a3540; border-radius: 99px; flex-shrink: 0; }
+  .view-toggle button { display: flex; align-items: center; gap: 8px; background: none; border: 0; color: var(--muted); font: 600 13px Pretendard, sans-serif; padding: 9px 16px; border-radius: 99px; cursor: pointer; transition: background .25s, color .25s; }
+  .view-toggle button svg { width: 14px; height: 14px; }
+  .view-toggle button.on { background: var(--gold); color: #111; }
+  .work-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .work-filters button { border: 1px solid #3a3540; background: none; color: #cfc9d3; border-radius: 99px; padding: 8px 14px; font: 600 13px Pretendard, sans-serif; cursor: pointer; transition: background .25s, color .25s, border-color .25s; }
+  .work-filters button i { font-style: normal; color: var(--muted); margin-left: 5px; font-size: 11px; }
+  .work-filters button:hover { border-color: var(--gold); color: var(--gold); }
+  .work-filters button.on { background: var(--ink); border-color: var(--ink); color: #111; }
+  .work-filters button.on i { color: #5f5a66; }
+
+  .work { position: relative; display: block; color: inherit; text-decoration: none; }
+  .work h4 { font-size: 18px; margin: 6px 0 4px; line-height: 1.35; }
   .work p { font-size: 13px; color: var(--muted); line-height: 1.6; }
-  a.work { color: inherit; text-decoration: none; }
-  .work img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; transition: transform .8s cubic-bezier(.2,.8,.2,1), filter .5s; filter: saturate(.9) brightness(.85); }
-  .work::after { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to top, rgba(14,13,15,.92) 0%, rgba(14,13,15,.55) 35%, rgba(14,13,15,0) 65%); }
-  .work::before { z-index: 2; }
-  .work > .t, .work > h4, .work > p { position: relative; z-index: 2; }
-  .work:hover img { transform: scale(1.05); filter: saturate(1) brightness(.95); }
-  /* 조립 중: 진짜 카드는 비우고 파편만 보임 */
-  .work.assembling { overflow: visible; background: transparent; border-color: transparent; pointer-events: none; }
-  .work.assembling::before, .work.assembling::after { opacity: 0; }
-  .work.assembling > img, .work.assembling > .t, .work.assembling > h4, .work.assembling > p { visibility: hidden; }
-  .work .shard { position: absolute; inset: 0; border-radius: 16px; overflow: hidden; background: #19171b; display: none; will-change: transform, opacity; backface-visibility: hidden; }
-  .work.assembling .shard { display: block; }
-  .shard-in { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 22px; }
-  .shard-in .scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(to top, rgba(14,13,15,.92) 0%, rgba(14,13,15,.55) 35%, rgba(14,13,15,0) 65%); }
-  .shard-in > .t, .shard-in > h4, .shard-in > p { position: relative; z-index: 2; }
-  .shard::after { content: ""; position: absolute; inset: 0; z-index: 3; opacity: var(--g, 0);
-                  background: linear-gradient(135deg, rgba(220,255,252,.55), rgba(120,255,240,.08) 45%, transparent 70%); }
-  .all-works { display: inline-flex; gap: 10px; margin-top: 28px; color: var(--ink); text-decoration: none; font-weight: 700; font-size: 15px; border-bottom: 1px solid #3a3540; padding-bottom: 4px; }
-  .all-works span { color: var(--gold); transition: transform .3s; }
-  .all-works:hover span { transform: translateX(6px); }
+  .work .cats { font-size: 11px; font-weight: 700; color: var(--gold); letter-spacing: .06em; }
+  .work .num, .work .count, .work .arrow { display: none; }
+
+  /* 그리드 보기 */
+  .works[data-view="grid"] { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .works[data-view="grid"] .work { aspect-ratio: 16 / 10; border-radius: 16px; overflow: hidden; background: #19171b; border: 1px solid var(--line); transition: transform .5s cubic-bezier(.2,.8,.2,1), border-color .3s; }
+  .works[data-view="grid"] .work:hover { transform: translateY(-6px); border-color: var(--gold); }
+  .work .thumb { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(.9) brightness(.8); transition: transform .8s cubic-bezier(.2,.8,.2,1), filter .5s; }
+  .work:hover .thumb { transform: scale(1.06); filter: none; }
+  .work .scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(14,13,15,.92), rgba(14,13,15,.4) 45%, transparent 75%); }
+  .work .meta { position: absolute; left: 20px; right: 20px; bottom: 16px; z-index: 2; }
+  .work .play { position: absolute; top: 14px; right: 14px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(14,13,15,.55); color: var(--gold); font-size: 11px; transition: transform .3s, background .3s, color .3s; }
+  .work:hover .play { background: var(--gold); color: #111; transform: scale(1.15); }
+  /* 캡슐 액체: 카드가 처음엔 청록 액체로 차 있다가 아래로 빠지며 썸네일이 드러남 */
+  .work .liquid { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(180deg, rgba(127,233,223,.86) 0%, rgba(52,184,176,.9) 45%, rgba(16,96,96,.97) 100%); backdrop-filter: blur(3px); will-change: transform; }
+  .work .liquid::before { content: ""; position: absolute; left: -50%; width: 200%; top: -15px; height: 16px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='16'%3E%3Cpath d='M0 16 Q15 0 30 8 T60 8 T90 8 T120 8 V16 Z' fill='%237fe9df' fill-opacity='.86'/%3E%3C/svg%3E") repeat-x; background-size: 120px 16px; animation: ks-wave 1.1s linear infinite; }
+  .work .liquid b { position: absolute; bottom: 8%; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.75); animation: ks-bub 1.8s ease-in infinite; }
+  @keyframes ks-wave { to { transform: translateX(120px); } }
+  @keyframes ks-bub { 0% { transform: translateY(0) scale(.6); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-160px) scale(1.1); opacity: 0; } }
+  .works[data-view="list"] .liquid { display: none; }
+
+  /* 리스트 보기 */
+  .works[data-view="list"] { border-top: 1px solid var(--line); }
+  .works[data-view="list"] .work { display: grid; grid-template-columns: 64px 1fr auto 40px; align-items: center; gap: 20px; padding: 26px 8px; border-bottom: 1px solid var(--line); }
+  .works[data-view="list"] .thumb, .works[data-view="list"] .scrim, .works[data-view="list"] .play { display: none; }
+  .works[data-view="list"] .num { display: block; font-family: Unbounded, sans-serif; font-weight: 700; font-size: 14px; color: #4a4452; }
+  .works[data-view="list"] .meta { position: static; }
+  .works[data-view="list"] .meta p { display: none; }
+  .works[data-view="list"] h4 { font-size: clamp(22px, 2.6vw, 38px); font-weight: 800; letter-spacing: -.02em; margin: 4px 0 0; transition: color .3s, transform .4s cubic-bezier(.2,.8,.2,1); }
+  .works[data-view="list"] .count { display: block; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .works[data-view="list"] .arrow { display: block; font-size: 22px; color: var(--muted); transition: transform .4s, color .3s; }
+  .works[data-view="list"] .work:hover h4 { color: var(--gold); transform: translateX(10px); }
+  .works[data-view="list"] .work:hover .arrow { color: var(--gold); transform: rotate(-45deg); }
+  /* 리스트에서 마우스를 따라다니는 썸네일 */
+  .hover-thumb { position: fixed; left: 0; top: 0; z-index: 40; width: 340px; aspect-ratio: 16 / 10; border-radius: 14px; overflow: hidden; pointer-events: none;
+                 opacity: 0; transform: translate(-50%, -50%) scale(.85); transition: opacity .25s, transform .35s cubic-bezier(.2,.8,.2,1); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  .hover-thumb.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .hover-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .works-foot { display: flex; justify-content: center; margin-top: 36px; }
+  .more-btn { display: inline-flex; align-items: center; gap: 10px; border: 1px solid #3a3540; background: none; color: var(--ink); border-radius: 99px; padding: 14px 26px; font: 700 14px Pretendard, sans-serif; cursor: pointer; transition: border-color .3s, color .3s; }
+  .more-btn span { color: var(--gold); }
+  .more-btn:hover { border-color: var(--gold); }
 
   /* about */
   .about-grid { display: grid; grid-template-columns: minmax(280px, 1fr) 1.15fr; gap: clamp(32px, 5vw, 80px); align-items: center; }
@@ -179,14 +210,22 @@
   @media (max-width: 860px) {
     nav ul { display: none; }
     .cap.left, .cap.right { left: 16px; right: 16px; top: auto; bottom: 14vh; transform: none; max-width: none; text-align: left; }
-    .works { grid-template-columns: 1fr 1fr; }
-    .work:first-child { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 10; }
+    .works[data-view="grid"] { grid-template-columns: 1fr 1fr; }
+    .works-head { flex-direction: column; align-items: flex-start; }
+    .works[data-view="list"] .work { grid-template-columns: 76px 1fr 20px; gap: 14px; padding: 16px 0; }
+    .works[data-view="list"] .thumb { display: block; position: static; width: 76px; aspect-ratio: 16 / 10; height: auto; border-radius: 8px; }
+    .works[data-view="list"] .num, .works[data-view="list"] .count { display: none; }
+    .works[data-view="list"] h4 { font-size: 17px; }
+    .works[data-view="list"] .arrow { font-size: 16px; }
     .services { grid-template-columns: 1fr; }
     .about-grid { grid-template-columns: 1fr; }
     .about-photo { max-width: 460px; width: 100%; margin: 0 auto; }
     .frame-cap { display: none; }
     .stats { gap: 22px; }
     .scroll-hint { display: none; }
+  }
+  @media (max-width: 600px) {
+    .works[data-view="grid"] { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -241,16 +280,17 @@
 </div>
 
 <section class="block" id="works">
-  <div class="eyebrow reveal">WORKS</div>
-  <h3 class="reveal">최근 작업물.</h3>
-  <div class="works">
-    <a class="work" href="https://kimite.kr/works/ai-screen-world" target="_blank" rel="noopener"><img src="works/ai-screen-world.webp" alt="" loading="lazy"><div class="t">숏폼</div><h4>AI를 이용해 화면 속 세상에 들어가다</h4><p>뮤직비디오부터 영화, 애니메이션까지. AI로 내 얼굴을 다양한 이야기의 주인공으로.</p></a>
-    <a class="work" href="https://kimite.kr/works/ai-cover-music-video" target="_blank" rel="noopener"><img src="works/ai-cover.webp" alt="" loading="lazy"><div class="t">AI 뮤직비디오</div><h4>AI COVER 뮤직비디오</h4><p>기존 음원 편곡과 영상화를 AI로.</p></a>
-    <a class="work" href="https://kimite.kr/works/goldskinz-music-video" target="_blank" rel="noopener"><img src="works/goldskinz.webp" alt="" loading="lazy"><div class="t">AI 뮤직비디오</div><h4>GOLDSKINZ 뮤직비디오</h4><p>기존 음원을 생성형 AI 비주얼로 재해석.</p></a>
-    <a class="work" href="https://kimite.kr/works/airvaper-loop" target="_blank" rel="noopener"><img src="works/airvaper.webp" alt="" loading="lazy"><div class="t">브랜드 필름</div><h4>에어베이퍼 홈페이지 루프 영상</h4><p>제품 속 캐릭터가 브랜드의 첫인상으로.</p></a>
-    <a class="work" href="https://kimite.kr/works/video-gift" target="_blank" rel="noopener"><img src="works/video-gift.webp" alt="" loading="lazy"><div class="t">영상 상품</div><h4>소중한 사람을 위한 영상 선물</h4><p>가족의 기억을 따뜻한 영상으로.</p></a>
+  <div class="works-head">
+    <div><div class="eyebrow reveal">WORKS</div><h3 class="reveal">최근 작업물.</h3></div>
+    <div class="view-toggle reveal">
+      <button class="on" data-view="grid"><svg viewBox="0 0 14 14" fill="currentColor"><rect x="0" y="0" width="6" height="6" rx="1.5"/><rect x="8" y="0" width="6" height="6" rx="1.5"/><rect x="0" y="8" width="6" height="6" rx="1.5"/><rect x="8" y="8" width="6" height="6" rx="1.5"/></svg>그리드</button>
+      <button data-view="list"><svg viewBox="0 0 14 14" fill="currentColor"><rect x="0" y="1" width="14" height="2" rx="1"/><rect x="0" y="6" width="14" height="2" rx="1"/><rect x="0" y="11" width="14" height="2" rx="1"/></svg>리스트</button>
+    </div>
   </div>
-  <a class="all-works reveal" href="https://kimite.kr/#all-works" target="_blank" rel="noopener">전체 작업 보기 <span>→</span></a>
+  <div class="work-filters reveal"></div>
+  <div class="works" data-view="grid"></div>
+  <div class="works-foot"><button class="more-btn" type="button">더 보기 <span></span></button></div>
+  <div class="hover-thumb" aria-hidden="true"><img alt=""></div>
 </section>
 
 <section class="block" id="services">
@@ -669,65 +709,96 @@
     gsap.to(el, { opacity: 1, y: 0, duration: 1, ease: 'expo.out', scrollTrigger: { trigger: el, start: 'top 88%' } });
   });
 
-  // ---- WORKS: 캡슐에서 튄 유리 파편이 모여 카드가 됨 (스크롤로 되감기 가능) ----
-  let ws = 11;
-  const wr = () => (ws = (ws * 16807) % 2147483647) / 2147483647;
-  const small = matchMedia('(max-width: 860px)').matches;
-  document.querySelectorAll('.work').forEach((card, ci) => {
-    const big = ci === 0 && !small;
-    const cols = small ? 3 : big ? 5 : 4, rows = small ? 3 : big ? 5 : 3;
-    const P = [];
-    for (let j = 0; j <= rows; j++) for (let i = 0; i <= cols; i++) {
-      let x = i / cols * 100, y = j / rows * 100;
-      if (i > 0 && i < cols) x += (wr() - .5) * 55 / cols;
-      if (j > 0 && j < rows) y += (wr() - .5) * 55 / rows;
-      P.push([x, y]);
-    }
-    const at = (i, j) => P[j * (cols + 1) + i];
-    const tris = [];
-    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-      const a = at(i, j), b = at(i + 1, j), c = at(i, j + 1), d = at(i + 1, j + 1);
-      if ((i + j) % 2) tris.push([a, b, d], [a, d, c]); else tris.push([a, b, c], [b, d, c]);
-    }
-    const parts = [...card.children].filter(e => !e.classList.contains('shard'));
-    const shards = tris.map(t => {
-      const sh = document.createElement('div');
-      sh.className = 'shard';
-      // 이웃 조각과 틈이 안 보이게 살짝 겹치도록 꼭짓점을 중심에서 밖으로 0.4% 밀어냄
-      const cx = (t[0][0] + t[1][0] + t[2][0]) / 3, cy = (t[0][1] + t[1][1] + t[2][1]) / 3;
-      sh.style.clipPath = 'polygon(' + t.map(([x, y]) => `${x + Math.sign(x - cx) * .4}% ${y + Math.sign(y - cy) * .4}%`).join(',') + ')';
-      const inner = document.createElement('div'); inner.className = 'shard-in';
-      parts.forEach(p => inner.appendChild(p.cloneNode(true)));
-      const scrim = document.createElement('div'); scrim.className = 'scrim'; inner.insertBefore(scrim, inner.children[1] || null);
-      sh.appendChild(inner); card.appendChild(sh);
-      const dir = (cx - 50) / 50;
-      sh._from = {
-        x: dir * (260 + wr() * 520) + (wr() - .5) * 160,
-        y: -(420 + wr() * 680) * (.6 + (1 - cy / 100) * .6),   // 위쪽(캡슐이 있던 쪽)에서 날아옴
-        rotation: (wr() - .5) * 260, rotationX: (wr() - .5) * 140, rotationY: (wr() - .5) * 140,
-        scale: 1 + wr() * 1.4,                                  // 몇 조각은 화면 쪽으로 크게 다가옴
-        delay: (Math.hypot(cx - 50, cy - 50) / 70) * .35 + wr() * .12,
-      };
-      return sh;
-    });
-    card.classList.add('assembling');
-    const st = { p: 0 };
-    const apply = () => {
-      const done = st.p >= .999;
-      card.classList.toggle('assembling', !done);
-      if (done) return;
-      for (const sh of shards) {
-        const f = sh._from, k = Math.min(1, Math.max(0, (st.p - f.delay) / (1 - f.delay * .9)));
-        const e = 1 - Math.pow(1 - k, 3), r = 1 - e;
-        sh.style.transform = `translate3d(${f.x * r}px, ${f.y * r}px, 0) rotate(${f.rotation * r}deg) rotateX(${f.rotationX * r}deg) rotateY(${f.rotationY * r}deg) scale(${1 + (f.scale - 1) * r})`;
-        sh.style.opacity = Math.min(1, k * 2.5);
-        sh.style.setProperty('--g', (r * .9).toFixed(3));
-      }
-    };
-    gsap.to(st, { p: 1, ease: 'none', onUpdate: apply,
-      scrollTrigger: { trigger: card, start: 'top 105%', end: small ? 'top 55%' : 'top 40%', scrub: .4 } });
-    apply();
+  // ---- WORKS: 그리드/리스트 보기 + 카테고리 필터 + 더 보기 + 캡슐 액체가 빠지며 드러나는 카드 ----
+  const WORKS = await fetch('works/works.json').then(r => r.json());
+  const FILTERS = ['전체', '브랜드 필름', '광고 영상', '제품 영상', '영상 상품', 'AI 뮤직비디오', '숏폼'];
+  const PAGE = 6;
+  const wState = { view: 'grid', filter: '전체', open: false };
+  const worksEl = document.querySelector('.works'), filtersEl = document.querySelector('.work-filters');
+  const moreBtn = document.querySelector('.more-btn'), hoverThumb = document.querySelector('.hover-thumb');
+  const cards = WORKS.map(w => {
+    const a = document.createElement('a');
+    a.className = 'work'; a.href = 'https://kimite.kr/works/' + w.slug; a.target = '_blank'; a.rel = 'noopener';
+    a.dataset.cats = w.cats.join('|');
+    const bubbles = Array.from({ length: 5 }, (_, k) => `<b style="left:${12 + k * 18 + (k % 2) * 6}%;animation-delay:${(k * .37).toFixed(2)}s"></b>`).join('');
+    a.innerHTML = `<img class="thumb" src="works/${w.slug}.webp" alt="" loading="lazy"><span class="scrim"></span>
+      <span class="num"></span><span class="play">▶</span>
+      <div class="meta"><div class="cats">${w.cats.join(' · ')}</div><h4>${w.title}</h4><p>${w.desc}</p></div>
+      <span class="count">${w.count}</span><span class="arrow">→</span><span class="liquid">${bubbles}</span>`;
+    a._drained = false;
+    worksEl.appendChild(a);
+    return a;
   });
+  FILTERS.forEach(f => {
+    const n = f === '전체' ? WORKS.length : WORKS.filter(w => w.cats.includes(f)).length;
+    const b = document.createElement('button');
+    b.type = 'button'; b.dataset.f = f; b.innerHTML = `${f}<i>${n}</i>`;
+    if (f === wState.filter) b.classList.add('on');
+    filtersEl.appendChild(b);
+  });
+
+  // 액체 빠지기: 화면에 들어올 때 한 번, 필터·보기를 바꾸면 다시 채워졌다가 빠짐
+  function drain(card, delay = 0, fast = false) {
+    const liq = card.querySelector('.liquid'), img = card.querySelector('.thumb');
+    gsap.killTweensOf([liq, img]);
+    gsap.fromTo(liq, { yPercent: 0 }, { yPercent: 108, duration: fast ? .75 : 1.15, ease: 'power2.inOut', delay });
+    gsap.fromTo(img, { scale: 1.12 }, { scale: 1, duration: fast ? 1 : 1.5, ease: 'power3.out', delay, clearProps: 'transform' });
+    card._drained = true;
+  }
+  const io = new IntersectionObserver(entries => {
+    const hits = entries.filter(e => e.isIntersecting && !e.target._drained && wState.view === 'grid');
+    hits.forEach((e, k) => drain(e.target, k * .12));
+  }, { threshold: .35 });
+  cards.forEach(c => io.observe(c));
+
+  function renderWorks(animate) {
+    const match = cards.filter(c => wState.filter === '전체' || c.dataset.cats.split('|').includes(wState.filter));
+    const shown = wState.open ? match : match.slice(0, PAGE);
+    cards.forEach(c => c.style.display = shown.includes(c) ? '' : 'none');
+    shown.forEach((c, k) => c.querySelector('.num').textContent = String(k + 1).padStart(2, '0'));
+    worksEl.dataset.view = wState.view;
+    const rest = match.length - PAGE;
+    moreBtn.parentElement.style.display = rest > 0 ? '' : 'none';
+    moreBtn.innerHTML = wState.open ? '접기 <span>↑</span>' : `더 보기 <span>+${rest}</span>`;
+    if (animate) {
+      if (wState.view === 'grid') shown.forEach((c, k) => drain(c, k * .06, true));
+      else gsap.fromTo(shown, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .5, stagger: .04, ease: 'power2.out', clearProps: 'opacity,transform' });
+    }
+    ScrollTrigger.refresh();
+  }
+  filtersEl.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    wState.filter = b.dataset.f; wState.open = false;
+    filtersEl.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    renderWorks(true);
+  });
+  document.querySelectorAll('.view-toggle button').forEach(b => b.addEventListener('click', () => {
+    if (wState.view === b.dataset.view) return;
+    wState.view = b.dataset.view;
+    document.querySelectorAll('.view-toggle button').forEach(x => x.classList.toggle('on', x === b));
+    renderWorks(true);
+  }));
+  moreBtn.addEventListener('click', () => {
+    const before = new Set(cards.filter(c => c.style.display !== 'none'));
+    wState.open = !wState.open;
+    renderWorks(false);
+    const added = cards.filter(c => c.style.display !== 'none' && !before.has(c));
+    if (wState.view === 'grid') added.forEach((c, k) => drain(c, k * .06, true));
+    else gsap.fromTo(added, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .5, stagger: .04, clearProps: 'opacity,transform' });
+    if (!wState.open) document.getElementById('works').scrollIntoView({ behavior: 'smooth' });
+  });
+  // 리스트 보기: 마우스를 따라다니는 썸네일
+  if (matchMedia('(hover: hover)').matches) {
+    const hx = gsap.quickTo(hoverThumb, 'left', { duration: .45, ease: 'power3' });
+    const hy = gsap.quickTo(hoverThumb, 'top', { duration: .45, ease: 'power3' });
+    const himg = hoverThumb.querySelector('img');
+    worksEl.addEventListener('pointermove', e => { hx(e.clientX + 190); hy(e.clientY); });
+    cards.forEach(c => {
+      c.addEventListener('pointerenter', () => { if (wState.view !== 'list') return; himg.src = c.querySelector('.thumb').src; hoverThumb.classList.add('on'); });
+      c.addEventListener('pointerleave', () => hoverThumb.classList.remove('on'));
+    });
+  }
+  renderWorks(false);
 
   // ---- ABOUT: 액자를 뚫고 나오는 카드 ----
   const aPhoto = document.querySelector('.about-photo'), aCard = document.querySelector('.about-card');
